@@ -114,3 +114,6 @@ if __name__ == '__main__':
         rospy.loginfo("GPIO cleanup and node shutdown.")
         rospy.signal_shutdown("Movement finished")
         rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
+
+
+#[INFO] [1715802675.616172]: Current Pulses: Left -76, Right -103, Average: -90
