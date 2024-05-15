@@ -29,37 +29,39 @@ pwm_right.start(0)
 # Variables para el seguimiento de encoders
 encoder_left_count = 0
 encoder_right_count = 0
-encoder_left_last_state = GPIO.input(ENCODER_LEFT_A)
-encoder_right_last_state = GPIO.input(ENCODER_RIGHT_A)
+encoder_left_last_state_A = GPIO.input(ENCODER_LEFT_A)
+encoder_right_last_state_A = GPIO.input(ENCODER_RIGHT_A)
 
 # Función de callback para los encoders
 def encoder_callback_left(channel):
-    global encoder_left_count, encoder_left_last_state
-    current_state = GPIO.input(ENCODER_LEFT_A)
-    if current_state != encoder_left_last_state:
-        if GPIO.input(ENCODER_LEFT_B) != current_state:
+    global encoder_left_count, encoder_left_last_state_A
+    state_A = GPIO.input(ENCODER_LEFT_A)
+    state_B = GPIO.input(ENCODER_LEFT_B)
+    if state_A != encoder_left_last_state_A:
+        if state_A == state_B:
             encoder_left_count += 1
         else:
             encoder_left_count -= 1
-        encoder_left_last_state = current_state
-    encoder_left_count = abs(encoder_left_count)  # Asegurar conteo positivo
+        encoder_left_last_state_A = state_A
     rospy.loginfo(f"Encoder Left count: {encoder_left_count}")
 
 def encoder_callback_right(channel):
-    global encoder_right_count, encoder_right_last_state
-    current_state = GPIO.input(ENCODER_RIGHT_A)
-    if current_state != encoder_right_last_state:
-        if GPIO.input(ENCODER_RIGHT_B) != current_state:
+    global encoder_right_count, encoder_right_last_state_A
+    state_A = GPIO.input(ENCODER_RIGHT_A)
+    state_B = GPIO.input(ENCODER_RIGHT_B)
+    if state_A != encoder_right_last_state_A:
+        if state_A == state_B:
             encoder_right_count += 1
         else:
             encoder_right_count -= 1
-        encoder_right_last_state = current_state
-    encoder_right_count = abs(encoder_right_count)  # Asegurar conteo positivo
+        encoder_right_last_state_A = state_A
     rospy.loginfo(f"Encoder Right count: {encoder_right_count}")
 
 # Configura las interrupciones de los encoders
-GPIO.add_event_detect(ENCODER_LEFT_A, GPIO.BOTH, callback=encoder_callback_left)
-GPIO.add_event_detect(ENCODER_RIGHT_A, GPIO.BOTH, callback=encoder_callback_right)
+GPIO.add_event_detect(ENCODER_LEFT_A, GPIO.RISING, callback=encoder_callback_left)
+GPIO.add_event_detect(ENCODER_LEFT_B, GPIO.RISING, callback=encoder_callback_left)
+GPIO.add_event_detect(ENCODER_RIGHT_A, GPIO.RISING, callback=encoder_callback_right)
+GPIO.add_event_detect(ENCODER_RIGHT_B, GPIO.RISING, callback=encoder_callback_right)
 
 # Suscripción a la posición del Lidar
 def pose_callback(data):
