@@ -17,6 +17,3 @@ roslaunch hector_slam_launch tutorial.launch
 
 # Ejecutar el script Python
 rosrun my_python_scripts pose_filter.py
-
-
-#hoa hola DCFKNJEJNFC swrfma wdjcnwldj
