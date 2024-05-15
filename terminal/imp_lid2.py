@@ -42,6 +42,7 @@ def encoder_callback_left(channel):
         else:
             encoder_left_count -= 1
         encoder_left_last_state = current_state
+    encoder_left_count = abs(encoder_left_count)  # Asegurar conteo positivo
     rospy.loginfo(f"Encoder Left count: {encoder_left_count}")
 
 def encoder_callback_right(channel):
@@ -53,6 +54,7 @@ def encoder_callback_right(channel):
         else:
             encoder_right_count -= 1
         encoder_right_last_state = current_state
+    encoder_right_count = abs(encoder_right_count)  # Asegurar conteo positivo
     rospy.loginfo(f"Encoder Right count: {encoder_right_count}")
 
 # Configura las interrupciones de los encoders
@@ -114,6 +116,3 @@ if __name__ == '__main__':
         rospy.loginfo("GPIO cleanup and node shutdown.")
         rospy.signal_shutdown("Movement finished")
         rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
-
-
-#[INFO] [1715802675.616172]: Current Pulses: Left -76, Right -103, Average: -90
