@@ -19,4 +19,4 @@ roslaunch hector_slam_launch tutorial.launch
 rosrun my_python_scripts pose_filter.py
 
 
-#hoa hola DCFKNJEJNFC swrfma
+#hoa hola DCFKNJEJNFC swrfma wdjcnwldj
