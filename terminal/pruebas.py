@@ -93,22 +93,6 @@ if __name__ == "__main__":
     main()
 
 
-ubuntu@ubuntu:~/catkin_ws/src/my_python_scripts/scripts$ rosrun my_python_scripts calibration.py
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 1: import: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 2: import: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 5: MOTOR_IZQ_ENABLE: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 6: MOTOR_IZQ_IN1: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 7: MOTOR_IZQ_IN2: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 8: ENCODER_IZQ: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 10: MOTOR_DER_ENABLE: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 11: MOTOR_DER_IN3: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 12: MOTOR_DER_IN4: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 13: ENCODER_DER: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 16: count_izq: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 17: count_der: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 18: start_time: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 19: end_time: command not found
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 22: syntax error near unexpected token `GPIO.BCM'
-/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py: line 22: `GPIO.setmode(GPIO.BCM)'
-ubuntu@ubuntu:~/catkin_ws/src/my_python_scripts/scripts$ 
-
+#!/usr/bin/env python3
+chmod +x /home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py
+rosrun my_python_scripts calibration.py
