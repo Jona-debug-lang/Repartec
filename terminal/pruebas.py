@@ -20,9 +20,9 @@ count_der = 0
 start_time = 0
 end_time = 0
 
-# Constantes k basadas en tus datos
-k_izq = 0.0004078771030959653
-k_der = 0.0004031683819856094
+# Constantes k basadas en tus datos (pulsos por centímetro)
+k_izq = 0.2923
+k_der = 0.2957
 
 # Configuración de GPIO
 GPIO.setmode(GPIO.BCM)
@@ -55,7 +55,7 @@ GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
 GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
 # Función para mover los motores
-def move_motors(distancia_deseada):
+def move_motors(distancia_cm):
     global start_time, end_time, count_izq, count_der
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
@@ -68,8 +68,8 @@ def move_motors(distancia_deseada):
     count_der = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = distancia_deseada / k_izq
-    pulsos_deseados_der = distancia_deseada / k_der
+    pulsos_deseados_izq = distancia_cm * k_izq
+    pulsos_deseados_der = distancia_cm * k_der
     
     while count_izq < pulsos_deseados_izq or count_der < pulsos_deseados_der:
         time.sleep(0.01)  # Ajusta este valor según sea necesario
@@ -82,21 +82,18 @@ def move_motors(distancia_deseada):
 # Función principal
 def main():
     try:
-        while True:
-            # Mueve los motores para una distancia deseada de 1 metro
-            distancia_deseada = 1.0  # Reemplazar con la distancia deseada
-            move_motors(distancia_deseada)
-            # Calcula el tiempo transcurrido
-            duration = end_time - start_time
-            # Imprime el conteo de pulsos y el tiempo
-            print(f"Conteo de pulsos izquierda: {count_izq}")
-            print(f"Conteo de pulsos derecha: {count_der}")
-            print(f"Tiempo: {duration} segundos")
-            print(f"Distancia deseada: {distancia_deseada} metros")
-            print(f"Distancia calculada izquierda: {count_izq * k_izq} metros")
-            print(f"Distancia calculada derecha: {count_der * k_der} metros")
-            # Espera antes de la siguiente prueba
-            time.sleep(1)
+        # Mueve los motores para una distancia deseada de 100 cm (1 metro)
+        distancia_deseada_cm = 100  # Reemplazar con la distancia deseada en cm
+        move_motors(distancia_deseada_cm)
+        # Calcula el tiempo transcurrido
+        duration = end_time - start_time
+        # Imprime el conteo de pulsos y el tiempo
+        print(f"Conteo de pulsos izquierda: {count_izq}")
+        print(f"Conteo de pulsos derecha: {count_der}")
+        print(f"Tiempo: {duration} segundos")
+        print(f"Distancia deseada: {distancia_deseada_cm} cm")
+        print(f"Distancia calculada izquierda: {count_izq / k_izq} cm")
+        print(f"Distancia calculada derecha: {count_der / k_der} cm")
     except KeyboardInterrupt:
         pass
     finally:
@@ -111,6 +108,6 @@ if __name__ == "__main__":
 #cd ~/catkin_ws
 #catkin_make
 #source devel/setup.bash
-#rosrun my_python_scripts calibration.py
+#rosrun my_python_scripts new_encoder.py
 
 
