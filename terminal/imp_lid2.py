@@ -84,7 +84,9 @@ def move_motors(distancia_cm):
 # Suscripción a la posición del Lidar
 def pose_callback(data):
     rospy.loginfo("Received Lidar data: x={:.3f}, y={:.3f}, theta={:.2f}".format(data.x, data.y, data.theta))
-    if abs(data.y) > 0.01:  # Más de 1 cm de desviación en Y
+    if data.y > 0.01:  # Desviación positiva mayor a 1 cm
+        adjust_movement(data.y)
+    elif data.y < -0.01:  # Desviación negativa mayor a 1 cm
         adjust_movement(data.y)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
