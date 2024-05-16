@@ -59,8 +59,8 @@ def move_motors(distancia_cm):
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(88)
-    pwm_right.ChangeDutyCycle(90)
+    pwm_left.ChangeDutyCycle(85)
+    pwm_right.ChangeDutyCycle(92)
     
     encoder_left_count = 0
     encoder_right_count = 0
@@ -90,23 +90,23 @@ def pose_callback(data):
         adjust_movement(data.y)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
-        pwm_left.ChangeDutyCycle(88)
-        pwm_right.ChangeDutyCycle(90)
+        pwm_left.ChangeDutyCycle(85)
+        pwm_right.ChangeDutyCycle(92)
 
 rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 
 def adjust_movement(y_deviation):
     if y_deviation > 0.01:  # Desviación positiva mayor a 1 cm
-        pwm_left.ChangeDutyCycle(85)  # Ajustar duty cycle para corrección
-        pwm_right.ChangeDutyCycle(70)
+        pwm_left.ChangeDutyCycle(90)  # Ajustar duty cycle para corrección
+        pwm_right.ChangeDutyCycle(84)
     elif y_deviation < -0.01:  # Desviación negativa mayor a 1 cm
-        pwm_left.ChangeDutyCycle(70)
-        pwm_right.ChangeDutyCycle(85)
+        pwm_left.ChangeDutyCycle(84)
+        pwm_right.ChangeDutyCycle(90)
     rospy.loginfo(f"Adjusting due to y deviation: {y_deviation:.3f}")
 
 if __name__ == '__main__':
     try:
-        move_motors(200)  # Mover 200 cm
+        move_motors(500)  # Mover 200 cm
     finally:
         pwm_left.stop()
         pwm_right.stop()

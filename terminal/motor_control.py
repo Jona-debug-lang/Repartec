@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import rospy
-from geometry_msgs.msg import Pose2D
 import RPi.GPIO as GPIO
+import math
 
 # Inicializar nodo ROS
-rospy.init_node('lidar_adjusted_movement', anonymous=True)
+rospy.init_node('l_turn_movement_detailed', anonymous=True)
 
 # Configuración de los GPIO
 GPIO.setmode(GPIO.BCM)
@@ -13,104 +13,96 @@ GPIO.setwarnings(False)
 # Definición de pines
 ENABLE1, ENABLE2 = 12, 13
 IN1, IN2, IN3, IN4 = 23, 24, 27, 22
-ENCODER_LEFT_A, ENCODER_LEFT_B = 5, 16
-ENCODER_RIGHT_A, ENCODER_RIGHT_B = 6, 26
+ENCODER_RIGHT, ENCODER_LEFT = 5, 6
 
 # Configurar pines de motor y encoder
 GPIO.setup([ENABLE1, ENABLE2, IN1, IN2, IN3, IN4], GPIO.OUT)
-GPIO.setup([ENCODER_LEFT_A, ENCODER_LEFT_B, ENCODER_RIGHT_A, ENCODER_RIGHT_B], GPIO.IN)
+GPIO.setup([ENCODER_RIGHT, ENCODER_LEFT], GPIO.IN)
 
 # Configurar PWM
-pwm_left = GPIO.PWM(ENABLE1, 1000)
-pwm_right = GPIO.PWM(ENABLE2, 1000)
-pwm_left.start(0)
+pwm_right = GPIO.PWM(ENABLE1, 1000)
+pwm_left = GPIO.PWM(ENABLE2, 1000)
 pwm_right.start(0)
+pwm_left.start(0)
 
 # Variables para el seguimiento de encoders
-encoder_left_count = 0
 encoder_right_count = 0
-encoder_left_last_state = GPIO.input(ENCODER_LEFT_A)
-encoder_right_last_state = GPIO.input(ENCODER_RIGHT_A)
+encoder_left_count = 0
 
-# Función de callback para los encoders
-def encoder_callback_left(channel):
-    global encoder_left_count, encoder_left_last_state
-    current_state = GPIO.input(ENCODER_LEFT_A)
-    if current_state != encoder_left_last_state:
-        if GPIO.input(ENCODER_LEFT_B) != current_state:
-            encoder_left_count += 1
-        else:
-            encoder_left_count -= 1
-        encoder_left_last_state = current_state
-    rospy.loginfo(f"Encoder Left count: {encoder_left_count}")
-
-def encoder_callback_right(channel):
-    global encoder_right_count, encoder_right_last_state
-    current_state = GPIO.input(ENCODER_RIGHT_A)
-    if current_state != encoder_right_last_state:
-        if GPIO.input(ENCODER_RIGHT_B) != current_state:
-            encoder_right_count += 1
-        else:
-            encoder_right_count -= 1
-        encoder_right_last_state = current_state
-    rospy.loginfo(f"Encoder Right count: {encoder_right_count}")
+# Variables para almacenar los pulsos en cada fase
+pulses_first_straight = [0, 0]  # [right, left]
+pulses_curve = [0, 0]  # [right, left]
+pulses_second_straight = [0, 0]  # [right, left]
 
 # Configura las interrupciones de los encoders
-GPIO.add_event_detect(ENCODER_LEFT_A, GPIO.BOTH, callback=encoder_callback_left)
-GPIO.add_event_detect(ENCODER_RIGHT_A, GPIO.BOTH, callback=encoder_callback_right)
+GPIO.add_event_detect(ENCODER_RIGHT, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'right'))
+GPIO.add_event_detect(ENCODER_LEFT, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'left'))
 
-# Suscripción a la posición del Lidar
-def pose_callback(data):
-    rospy.loginfo("Received Lidar data: x={:.3f}, y={:.3f}, theta={:.2f}".format(data.x, data.y, data.theta))
-    if abs(data.y) > 0.01:  # Más de 1 cm de desviación en Y
-        adjust_movement(data.y)
-    else:
-        # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
-        pwm_left.ChangeDutyCycle(100)
-        pwm_right.ChangeDutyCycle(100)
+def encoder_callback(channel, side):
+    global encoder_right_count, encoder_left_count
+    if side == 'right':
+        encoder_right_count += 1
+    elif side == 'left':
+        encoder_left_count += 1
+    rospy.loginfo(f"Encoder {side} count: Right {encoder_right_count}, Left {encoder_left_count}")
 
-rospy.Subscriber('simple_pose', Pose2D, pose_callback)
+def move_distance(target_pulses, pwm_right_speed, pwm_left_speed, phase):
+    initial_pulses_right = encoder_right_count
+    initial_pulses_left = encoder_left_count
 
-def adjust_movement(y_deviation):
-    if y_deviation > 0.01:  # Desviación positiva mayor a 1 cm
-        pwm_left.ChangeDutyCycle(95)  # Ajustar duty cycle para corrección
-        pwm_right.ChangeDutyCycle(90)
-    elif y_deviation < -0.01:  # Desviación negativa mayor a 1 cm
-        pwm_left.ChangeDutyCycle(90)
-        pwm_right.ChangeDutyCycle(95)
-    rospy.loginfo(f"Adjusting due to y deviation: {y_deviation:.3f}")
-
-def move_straight(target_distance_cm):
-    pulses_per_cm = 2.58  # Usar la calibración que ya tienes
-    target_pulses = int(target_distance_cm * pulses_per_cm)
-    initial_pulses = (encoder_left_count + encoder_right_count) // 2
-
-    rospy.loginfo("Starting straight movement.")
+    rospy.loginfo(f"Starting movement for {target_pulses} pulses with PWM Right: {pwm_right_speed}%, Left: {pwm_left_speed}%.")
     GPIO.output([IN1, IN3], GPIO.HIGH)
     GPIO.output([IN2, IN4], GPIO.LOW)
-    pwm_left.ChangeDutyCycle(100)
-    pwm_right.ChangeDutyCycle(100)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
+    pwm_left.ChangeDutyCycle(pwm_left_speed)
 
     while True:
-        current_pulses = (encoder_left_count + encoder_right_count) // 2
-        rospy.loginfo(f"Current Pulses: Left {encoder_left_count}, Right {encoder_right_count}, Average: {current_pulses}")
-        if current_pulses - initial_pulses >= target_pulses:
+        current_pulses_right = encoder_right_count - initial_pulses_right
+        current_pulses_left = encoder_left_count - initial_pulses_left
+        current_pulses_avg = (current_pulses_right + current_pulses_left) / 2
+        if current_pulses_avg >= target_pulses:
             break
         rospy.sleep(0.01)
 
-    # Detener motores
+    # Store pulse data based on phase
+    if phase == 'first_straight':
+        pulses_first_straight[0] = current_pulses_right
+        pulses_first_straight[1] = current_pulses_left
+    elif phase == 'curve':
+        pulses_curve[0] = current_pulses_right
+        pulses_curve[1] = current_pulses_left
+    elif phase == 'second_straight':
+        pulses_second_straight[0] = current_pulses_right
+        pulses_second_straight[1] = current_pulses_left
+
+    # Stop motors
     GPIO.output([IN1, IN2, IN3, IN4], GPIO.LOW)
-    pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo(f"Destination reached with {encoder_left_count} left pulses and {encoder_right_count} right pulses.")
+    pwm_left.ChangeDutyCycle(0)
+
+def start_l_turn_movement():
+    pulses_per_cm = 7.455  # Adjust based on calibration
+    straight_initial = 33 * pulses_per_cm
+    straight_final = 33 * pulses_per_cm
+
+    # Estimated curve pulses, needs calibration
+    curve_pulses = 486
+
+    # Perform the movements
+    move_distance(int(straight_initial), 80, 80, 'first_straight')  # Move straight for the initial part of X
+    move_distance(curve_pulses, 90, 15, 'curve')  # Adjust PWM for curve
+    move_distance(int(straight_final), 80, 80, 'second_straight')  # Move straight for the final part
+
+    rospy.loginfo(f"Pulses count: First straight - Right {pulses_first_straight[0]}, Left {pulses_first_straight[1]}, "
+                  f"Curve - Right {pulses_curve[0]}, Left {pulses_curve[1]}, "
+                  f"Second straight - Right {pulses_second_straight[0]}, Left {pulses_second_straight[1]}")
 
 if __name__ == '__main__':
     try:
-        move_straight(200)  # Mover 200 cm
+        start_l_turn_movement()
     finally:
-        pwm_left.stop()
         pwm_right.stop()
+        pwm_left.stop()
         GPIO.cleanup()
         rospy.loginfo("GPIO cleanup and node shutdown.")
-        rospy.signal_shutdown("Movement finished")
-        rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
+        rospy.signal_shutdown("Finished movement")
