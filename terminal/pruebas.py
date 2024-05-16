@@ -21,8 +21,8 @@ start_time = 0
 end_time = 0
 
 # Constantes k basadas en tus datos (pulsos por centímetro)
-k_izq = 0.2923
-k_der = 0.2957
+k_izq = 29.23
+k_der = 29.57
 
 # Configuración de GPIO
 GPIO.setmode(GPIO.BCM)
@@ -61,8 +61,8 @@ def move_motors(distancia_cm):
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_izq.ChangeDutyCycle(89)
-    pwm_der.ChangeDutyCycle(88)
+    pwm_izq.ChangeDutyCycle(88)
+    pwm_der.ChangeDutyCycle(90)
     
     count_izq = 0
     count_der = 0
@@ -87,7 +87,7 @@ def move_motors(distancia_cm):
 def main():
     try:
         # Mueve los motores para una distancia deseada de 100 cm (1 metro)
-        distancia_deseada_cm = 100  # Reemplazar con la distancia deseada en cm
+        distancia_deseada_cm = 200  # Reemplazar con la distancia deseada en cm
         move_motors(distancia_deseada_cm)
         # Calcula el tiempo transcurrido
         duration = end_time - start_time
