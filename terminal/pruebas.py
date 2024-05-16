@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import RPi.GPIO as GPIO
 import time
 
@@ -17,6 +19,10 @@ count_izq = 0
 count_der = 0
 start_time = 0
 end_time = 0
+
+# Constantes k basadas en tus datos
+k_izq = 0.0004078771030959653
+k_der = 0.0004031683819856094
 
 # Configuración de GPIO
 GPIO.setmode(GPIO.BCM)
@@ -49,19 +55,25 @@ GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
 GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
 # Función para mover los motores
-def move_motors(pwm_value, duration):
+def move_motors(distancia_deseada):
     global start_time, end_time, count_izq, count_der
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_izq.ChangeDutyCycle(pwm_value)
-    pwm_der.ChangeDutyCycle(pwm_value)
+    pwm_izq.ChangeDutyCycle(89)
+    pwm_der.ChangeDutyCycle(88)
     
     count_izq = 0
     count_der = 0
     start_time = time.time()
-    time.sleep(duration)
+    
+    pulsos_deseados_izq = distancia_deseada / k_izq
+    pulsos_deseados_der = distancia_deseada / k_der
+    
+    while count_izq < pulsos_deseados_izq or count_der < pulsos_deseados_der:
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+    
     end_time = time.time()
     
     pwm_izq.ChangeDutyCycle(0)  # Detener los motores
@@ -71,17 +83,18 @@ def move_motors(pwm_value, duration):
 def main():
     try:
         while True:
-            # Mueve los motores con un duty cycle del 50% durante 2 segundos
-            move_motors(50, 2)
+            # Mueve los motores para una distancia deseada de 1 metro
+            distancia_deseada = 1.0  # Reemplazar con la distancia deseada
+            move_motors(distancia_deseada)
             # Calcula el tiempo transcurrido
             duration = end_time - start_time
             # Imprime el conteo de pulsos y el tiempo
             print(f"Conteo de pulsos izquierda: {count_izq}")
             print(f"Conteo de pulsos derecha: {count_der}")
             print(f"Tiempo: {duration} segundos")
-            # Calcula y muestra la distancia (ajusta esta parte según tus pruebas)
-            distancia = 0.1  # Cambia este valor según la distancia que recorriste en la prueba
-            print(f"Distancia recorrida: {distancia} metros")
+            print(f"Distancia deseada: {distancia_deseada} metros")
+            print(f"Distancia calculada izquierda: {count_izq * k_izq} metros")
+            print(f"Distancia calculada derecha: {count_der * k_der} metros")
             # Espera antes de la siguiente prueba
             time.sleep(1)
     except KeyboardInterrupt:
@@ -93,6 +106,11 @@ if __name__ == "__main__":
     main()
 
 
-#!/usr/bin/env python3
-chmod +x /home/ubuntu/catkin_ws/src/my_python_scripts/scripts/calibration.py
-rosrun my_python_scripts calibration.py
+#cd ~/catkin_ws/src/my_python_scripts/scripts
+#chmod +x calibration.py
+#cd ~/catkin_ws
+#catkin_make
+#source devel/setup.bash
+#rosrun my_python_scripts calibration.py
+
+
