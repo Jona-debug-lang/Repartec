@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rospy
+from geometry_msgs.msg import Pose2D
 import RPi.GPIO as GPIO
 import math
 
@@ -11,98 +12,112 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 # Definición de pines
-ENABLE1, ENABLE2 = 12, 13
-IN1, IN2, IN3, IN4 = 23, 24, 27, 22
-ENCODER_RIGHT, ENCODER_LEFT = 5, 6
+MOTOR_IZQ_ENABLE = 12
+MOTOR_IZQ_IN1 = 23
+MOTOR_IZQ_IN2 = 24
+MOTOR_DER_ENABLE = 13
+MOTOR_DER_IN3 = 27
+MOTOR_DER_IN4 = 22
+ENCODER_IZQ = 5
+ENCODER_DER = 6
 
 # Configurar pines de motor y encoder
-GPIO.setup([ENABLE1, ENABLE2, IN1, IN2, IN3, IN4], GPIO.OUT)
-GPIO.setup([ENCODER_RIGHT, ENCODER_LEFT], GPIO.IN)
+GPIO.setup([MOTOR_IZQ_ENABLE, MOTOR_DER_ENABLE, MOTOR_IZQ_IN1, MOTOR_IZQ_IN2, MOTOR_DER_IN3, MOTOR_DER_IN4], GPIO.OUT)
+GPIO.setup([ENCODER_IZQ, ENCODER_DER], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Configurar PWM
-pwm_right = GPIO.PWM(ENABLE1, 1000)
-pwm_left = GPIO.PWM(ENABLE2, 1000)
-pwm_right.start(0)
+pwm_left = GPIO.PWM(MOTOR_IZQ_ENABLE, 1000)
+pwm_right = GPIO.PWM(MOTOR_DER_ENABLE, 1000)
 pwm_left.start(0)
+pwm_right.start(0)
 
 # Variables para el seguimiento de encoders
-encoder_right_count = 0
 encoder_left_count = 0
+encoder_right_count = 0
+
+# Constantes k basadas en tus datos (pulsos por centímetro)
+k_izq = 29.23
+k_der = 29.57
 
 # Variables para almacenar los pulsos en cada fase
-pulses_first_straight = [0, 0]  # [right, left]
-pulses_curve = [0, 0]  # [right, left]
-pulses_second_straight = [0, 0]  # [right, left]
+pulses_first_straight = [0, 0]  # [left, right]
+pulses_curve = [0, 0]  # [left, right]
+pulses_second_straight = [0, 0]  # [left, right]
 
 # Configura las interrupciones de los encoders
-GPIO.add_event_detect(ENCODER_RIGHT, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'right'))
-GPIO.add_event_detect(ENCODER_LEFT, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'left'))
+GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'left'))
+GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=lambda channel: encoder_callback(channel, 'right'))
 
 def encoder_callback(channel, side):
-    global encoder_right_count, encoder_left_count
-    if side == 'right':
-        encoder_right_count += 1
-    elif side == 'left':
+    global encoder_left_count, encoder_right_count
+    if side == 'left':
         encoder_left_count += 1
-    rospy.loginfo(f"Encoder {side} count: Right {encoder_right_count}, Left {encoder_left_count}")
+    elif side == 'right':
+        encoder_right_count += 1
+    rospy.loginfo(f"Encoder {side} count: Left {encoder_left_count}, Right {encoder_right_count}")
 
-def move_distance(target_pulses, pwm_right_speed, pwm_left_speed, phase):
-    initial_pulses_right = encoder_right_count
+def move_distance(target_pulses, pwm_left_speed, pwm_right_speed, phase):
     initial_pulses_left = encoder_left_count
+    initial_pulses_right = encoder_right_count
 
-    rospy.loginfo(f"Starting movement for {target_pulses} pulses with PWM Right: {pwm_right_speed}%, Left: {pwm_left_speed}%.")
-    GPIO.output([IN1, IN3], GPIO.HIGH)
-    GPIO.output([IN2, IN4], GPIO.LOW)
-    pwm_right.ChangeDutyCycle(pwm_right_speed)
+    rospy.loginfo(f"Starting movement for {target_pulses} pulses with PWM Left: {pwm_left_speed}%, Right: {pwm_right_speed}%.")
+    GPIO.output([MOTOR_IZQ_IN1, MOTOR_DER_IN3], GPIO.HIGH)
+    GPIO.output([MOTOR_IZQ_IN2, MOTOR_DER_IN4], GPIO.LOW)
     pwm_left.ChangeDutyCycle(pwm_left_speed)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
 
     while True:
-        current_pulses_right = encoder_right_count - initial_pulses_right
         current_pulses_left = encoder_left_count - initial_pulses_left
-        current_pulses_avg = (current_pulses_right + current_pulses_left) / 2
+        current_pulses_right = encoder_right_count - initial_pulses_right
+        current_pulses_avg = (current_pulses_left + current_pulses_right) / 2
         if current_pulses_avg >= target_pulses:
             break
         rospy.sleep(0.01)
 
-    # Store pulse data based on phase
+    # Almacenar datos de pulsos basados en la fase
     if phase == 'first_straight':
-        pulses_first_straight[0] = current_pulses_right
-        pulses_first_straight[1] = current_pulses_left
+        pulses_first_straight[0] = current_pulses_left
+        pulses_first_straight[1] = current_pulses_right
     elif phase == 'curve':
-        pulses_curve[0] = current_pulses_right
-        pulses_curve[1] = current_pulses_left
+        pulses_curve[0] = current_pulses_left
+        pulses_curve[1] = current_pulses_right
     elif phase == 'second_straight':
-        pulses_second_straight[0] = current_pulses_right
-        pulses_second_straight[1] = current_pulses_left
+        pulses_second_straight[0] = current_pulses_left
+        pulses_second_straight[1] = current_pulses_right
 
-    # Stop motors
-    GPIO.output([IN1, IN2, IN3, IN4], GPIO.LOW)
-    pwm_right.ChangeDutyCycle(0)
+    # Detener motores
+    GPIO.output([MOTOR_IZQ_IN1, MOTOR_IZQ_IN2, MOTOR_DER_IN3, MOTOR_DER_IN4], GPIO.LOW)
     pwm_left.ChangeDutyCycle(0)
+    pwm_right.ChangeDutyCycle(0)
 
 def start_l_turn_movement():
-    pulses_per_cm = 7.455  # Adjust based on calibration
-    straight_initial = 33 * pulses_per_cm
-    straight_final = 33 * pulses_per_cm
+    # Calcula los pulsos para las distancias rectas usando las constantes k
+    distance_first_straight = 150  # Distancia en cm para la primera parte recta (1.5 metros)
+    distance_second_straight = 150  # Distancia en cm para la segunda parte recta (1.5 metros)
 
-    # Estimated curve pulses, needs calibration
-    curve_pulses = 486
+    straight_initial_left_pulses = distance_first_straight * k_izq
+    straight_initial_right_pulses = distance_first_straight * k_der
+    straight_final_left_pulses = distance_second_straight * k_izq
+    straight_final_right_pulses = distance_second_straight * k_der
 
-    # Perform the movements
-    move_distance(int(straight_initial), 80, 80, 'first_straight')  # Move straight for the initial part of X
-    move_distance(curve_pulses, 90, 15, 'curve')  # Adjust PWM for curve
-    move_distance(int(straight_final), 80, 80, 'second_straight')  # Move straight for the final part
+    # Pulsos estimados para la curva, necesitan calibración
+    curve_pulses = 486  # Este valor puede necesitar ajuste basado en pruebas reales
 
-    rospy.loginfo(f"Pulses count: First straight - Right {pulses_first_straight[0]}, Left {pulses_first_straight[1]}, "
-                  f"Curve - Right {pulses_curve[0]}, Left {pulses_curve[1]}, "
-                  f"Second straight - Right {pulses_second_straight[0]}, Left {pulses_second_straight[1]}")
+    # Realizar los movimientos
+    move_distance(int(straight_initial_left_pulses), 85, 92, 'first_straight')  # Mover recto para la primera parte de 1.5 metros
+    move_distance(curve_pulses, 90, 15, 'curve')  # Ajustar PWM para la curva
+    move_distance(int(straight_final_left_pulses), 85, 92, 'second_straight')  # Mover recto para la parte final de 1.5 metros
+
+    rospy.loginfo(f"Pulses count: First straight - Left {pulses_first_straight[0]}, Right {pulses_first_straight[1]}, "
+                  f"Curve - Left {pulses_curve[0]}, Right {pulses_curve[1]}, "
+                  f"Second straight - Left {pulses_second_straight[0]}, Right {pulses_second_straight[1]}")
 
 if __name__ == '__main__':
     try:
         start_l_turn_movement()
     finally:
-        pwm_right.stop()
         pwm_left.stop()
+        pwm_right.stop()
         GPIO.cleanup()
         rospy.loginfo("GPIO cleanup and node shutdown.")
         rospy.signal_shutdown("Finished movement")
