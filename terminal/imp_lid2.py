@@ -78,14 +78,14 @@ rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 def adjust_movement(y_deviation):
     if y_deviation > 0.01:  # Desviación positiva mayor a 1 cm
         pwm_left.ChangeDutyCycle(95)  # Ajustar duty cycle para corrección
-        pwm_right.ChangeDutyCycle(90)
+        pwm_right.ChangeDutyCycle(70)
     elif y_deviation < -0.01:  # Desviación negativa mayor a 1 cm
-        pwm_left.ChangeDutyCycle(90)
+        pwm_left.ChangeDutyCycle(70)
         pwm_right.ChangeDutyCycle(95)
     rospy.loginfo(f"Adjusting due to y deviation: {y_deviation:.3f}")
 
 def move_straight(target_distance_cm):
-    pulses_per_cm = 2.58  # Usar la calibración que ya tienes
+    pulses_per_cm = 1  # Usar la calibración que ya tienes
     target_pulses = int(target_distance_cm * pulses_per_cm)
     initial_pulses = (encoder_left_count + encoder_right_count) // 2
 
@@ -107,7 +107,7 @@ def move_straight(target_distance_cm):
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo(f"Destination reached with {encoder_left_count} left pulses and {encoder_right_count} right pulses.")
-
+ 
 if __name__ == '__main__':
     try:
         move_straight(200)  # Mover 200 cm
