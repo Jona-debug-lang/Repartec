@@ -21,13 +21,9 @@ MOTOR_DER_IN4 = 22
 ENCODER_IZQ = 5
 ENCODER_DER = 6
 
-# Pines adicionales para encoders
-ENCODER_LEFT_A, ENCODER_LEFT_B = 5, 16
-ENCODER_RIGHT_A, ENCODER_RIGHT_B = 6, 26
-
 # Configurar pines de motor y encoder
 GPIO.setup([MOTOR_IZQ_ENABLE, MOTOR_DER_ENABLE, MOTOR_IZQ_IN1, MOTOR_IZQ_IN2, MOTOR_DER_IN3, MOTOR_DER_IN4], GPIO.OUT)
-GPIO.setup([ENCODER_LEFT_A, ENCODER_LEFT_B, ENCODER_RIGHT_A, ENCODER_RIGHT_B], GPIO.IN)
+GPIO.setup([ENCODER_IZQ, ENCODER_DER], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Configurar PWM
 pwm_left = GPIO.PWM(MOTOR_IZQ_ENABLE, 1000)
@@ -44,19 +40,17 @@ k_izq = 29.23
 k_der = 29.57
 
 # Función de callback para los encoders
-def encoder_callback_left(channel):
+def encoder_callback_izq(channel):
     global encoder_left_count
     encoder_left_count += 1
 
-def encoder_callback_right(channel):
+def encoder_callback_der(channel):
     global encoder_right_count
     encoder_right_count += 1
 
 # Configura las interrupciones de los encoders
-GPIO.add_event_detect(ENCODER_LEFT_A, GPIO.RISING, callback=encoder_callback_left)
-GPIO.add_event_detect(ENCODER_LEFT_B, GPIO.RISING, callback=encoder_callback_left)
-GPIO.add_event_detect(ENCODER_RIGHT_A, GPIO.RISING, callback=encoder_callback_right)
-GPIO.add_event_detect(ENCODER_RIGHT_B, GPIO.RISING, callback=encoder_callback_right)
+GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
+GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
 # Función para mover los motores
 def move_motors(distancia_cm):
