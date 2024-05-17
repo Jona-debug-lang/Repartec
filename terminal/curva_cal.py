@@ -111,17 +111,17 @@ def turn_90_degrees(pwm_left_speed, pwm_right_speed):
 def start_l_turn_movement():
     # Primera parte recta (2 metros)
     distancia_cm = 200
-    move_straight(distancia_cm, 85, 92)
+    move_straight(distancia_cm, 95, 100)
     
     # Primera curva de 90 grados
     turn_90_degrees(100, 1)
     
     # Segunda parte recta (2 metros menos la distancia de la curva en X)
     distancia_recta_restante = 200 - 109.84
-    move_straight(distancia_recta_restante, 85, 92)
+    move_straight(distancia_recta_restante, 95, 100)
     
     # Segunda curva de 90 grados
-    turn_90_degrees(100, 1)
+    #turn_90_degrees(100, 1)
 
 if __name__ == '__main__':
     try:
