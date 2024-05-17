@@ -1,21 +1,19 @@
+#!/usr/bin/env python3
+
 import subprocess
 import keyboard
-import os
 import time
 
 # Define los comandos
 full_launch_commands = [
-    "cd ~/catkin_ws",
-    "catkin_make",
-    "source ~/catkin_ws/devel/setup.bash",
-    "roslaunch rplidar_ros rplidar_a2m8.launch",
+    "cd ~/catkin_ws && catkin_make && source ~/catkin_ws/devel/setup.bash && roslaunch rplidar_ros rplidar_a2m8.launch",
     "roslaunch hector_slam_launch sinarviz.launch",
     "rosrun my_python_scripts pose_filter.py"
 ]
 
 relaunch_movement_command = [
     "source ~/catkin_ws/devel/setup.bash",
-    "rosrun my_python_scripts ultimo_curva.py"
+    "rosrun my_python_scripts nombre_codigo_de_movimiento.py"
 ]
 
 # Función para ejecutar comandos en una nueva terminal
@@ -42,7 +40,7 @@ def reset_hector_slam():
 
 # Función para detener el script de movimiento
 def stop_movement_script():
-    stop_command = "rosnode kill /ultimo_curva.py"
+    stop_command = "rosnode kill /nombre_del_nodo_de_movimiento"
     subprocess.Popen(stop_command, shell=True)
 
 # Loop para detectar teclas
@@ -70,6 +68,3 @@ while True:
 
     # Pausa breve para evitar uso intensivo de CPU
     time.sleep(0.1)
-
-#chmod +x run_scripts.py
-#./run_scripts.py
