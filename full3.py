@@ -243,3 +243,11 @@ if __name__ == '__main__':
         rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
         rospy.loginfo(f"Lidar data collected: {lidar_data}")
         rospy.loginfo(f"Theta changes during turns: {theta_changes}")
+
+
+
+
+#rostopic pub /first_move std_msgs/String "T1"
+#rostopic pub /first_move std_msgs/String "T2"
+#rostopic pub /continue_move std_msgs/String "continue_move"
+#rostopic pub /continue_move std_msgs/String "continue_move"
