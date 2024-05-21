@@ -201,21 +201,22 @@ def adjust_movement(deviation, eje):
 
 # Función para manejar el comando T1
 def handle_T1():
-    # Primera parte recta (60 cm) - Corrección en eje Y
-    distancia_cm = 60
+    # Primera parte recta (70 cm) - Corrección en eje Y
+    distancia_cm = 70
     move_straight(distancia_cm, 100, 100, 'y')  # Velocidades calibradas
     
     # Primera curva de 90 grados
-    turn_90_degrees(6200, 100, 0)
+    turn_90_degrees(5500, 100, 0)
     
-    # Segunda parte recta (20 cm) - Corrección en eje X
-    distancia_cm = 20
+    # Segunda parte recta (30 cm) - Corrección en eje X
+    distancia_cm = 30
     move_straight(distancia_cm, 100, 100, 'x')  # Velocidades calibradas
     
     # Segunda curva de 90 grados
-    turn_90_degrees(7550, 100, 0)
+    turn_90_degrees(6550, 100, 0)
 
     rospy.loginfo("Esperando mensaje continue_move...")
+    time.sleep(0.1)  # Espera corta para asegurarse de que el búfer esté limpio
     rospy.wait_for_message('continue_move', String)
     
     # Tercera parte recta (45 cm) - Corrección en eje Y
@@ -227,14 +228,14 @@ def handle_T1():
     move_straight(distancia_cm, 80, 80, 'y')  # Velocidad reducida
 
     # Vuelta a 90 grados en su propio eje en terreno ideal
-    turn_in_place_90_degrees(3600, 70)  # Velocidad reducida
+    turn_in_place_90_degrees(1200, 70)  # Velocidad reducida
 
     # Recta en terreno ideal
     distancia_cm = 200
     move_straight(distancia_cm, 90, 90, 'x')  # Velocidad reducida
 
     # Segunda vuelta de 90 grados en su propio eje y final
-    turn_in_place_90_degrees(3600, 70)  # Velocidad reducida
+    turn_in_place_90_degrees(1200, 70)  # Velocidad reducida
 
     # Regreso a terreno anterior
     distancia_cm = 60
@@ -247,6 +248,7 @@ def handle_T2():
     move_straight(distancia_cm, 100, 100, 'y')  # Velocidades calibradas
     
     rospy.loginfo("Esperando mensaje continue_move...")
+    time.sleep(0.1)  # Espera corta para asegurarse de que el búfer esté limpio
     rospy.wait_for_message('continue_move', String)
     
     # Mover 200 cm en reversa
@@ -275,8 +277,18 @@ def handle_T2():
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Motores detenidos")
 
+def reset_state():
+    global encoder_left_count, encoder_right_count, deviation_y, deviation_x, lidar_data, theta_changes
+    encoder_left_count = 0
+    encoder_right_count = 0
+    deviation_y = 0
+    deviation_x = 0
+    lidar_data = []
+    theta_changes = []
+
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
+    reset_state()
     if data.data == "T1":
         handle_T1()
     elif data.data == "T2":
