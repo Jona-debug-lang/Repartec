@@ -251,3 +251,10 @@ if __name__ == '__main__':
 #rostopic pub /first_move std_msgs/String "T2"
 #rostopic pub /continue_move std_msgs/String "continue_move"
 #rostopic pub /continue_move std_msgs/String "continue_move"
+
+chmod +x ~/catkin_ws/src/robot_control/scripts/robot_movement.py
+cd ~/catkin_ws
+catkin_make
+source devel/setup.bash
+rosrun robot_control robot_movement.py
+
