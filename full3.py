@@ -325,5 +325,5 @@ chmod +x ~/catkin_ws/src/robot_control/scripts/robot_movement.py
 cd ~/catkin_ws
 catkin_make
 source devel/setup.bash
-rosrun robot_control robot_movement.py
+rosrun robot_control full3.py
 
