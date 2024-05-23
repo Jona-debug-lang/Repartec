@@ -42,7 +42,7 @@ encoder_right_count = 0
 k_izq = 29.23
 k_der = 29.57
 
-# Variables para la corrección de ruta
+# Variables para la corrección de ruta y evasión de obstáculos
 deviation_y = 0
 deviation_x = 0
 lidar_data = []
@@ -75,11 +75,14 @@ rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 # Suscripción a los obstáculos
 def obstacles_callback(data):
     global should_stop
+    should_stop = False
     for circle in data.circles:
         if circle.velocity.x ** 2 + circle.velocity.y ** 2 > 0.1 ** 2:
-            should_stop = True
-            return
-    should_stop = False
+            # Verificar si el objeto en movimiento está dentro del radio de 100 cm
+            if (circle.center.x ** 2 + circle.center.y ** 2) <= 1.0 ** 2:
+                should_stop = True
+                rospy.loginfo("Movimiento pausado por detección de objeto en movimiento")
+                return
 
 rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
 
@@ -173,10 +176,10 @@ def turn_90_degrees(pulses_turn, pwm_left_speed, pwm_right_speed):
 def turn_in_place_90_degrees(pulses_turn, pwm_speed):
     global start_time, end_time, encoder_left_count, encoder_right_count
     initial_theta = lidar_data[-1][2] if lidar_data else 0  # Obtener theta inicial del LIDAR
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
     pwm_left.ChangeDutyCycle(pwm_speed)
     pwm_right.ChangeDutyCycle(pwm_speed)
     
@@ -217,22 +220,22 @@ def turn_in_place_90_degrees(pulses_turn, pwm_speed):
 def adjust_movement(deviation, eje):
     if eje == 'y':
         if deviation > 0.01:  # Desviación positiva mayor a 1 cm
-            pwm_left.ChangeDutyCycle(80)  # Ajustar duty cycle para corrección
+            pwm_left.ChangeDutyCycle(70)  # Ajustar duty cycle para corrección
             pwm_right.ChangeDutyCycle(100)
         elif deviation < -0.01:  # Desviación negativa mayor a 1 cm
             pwm_left.ChangeDutyCycle(100)
-            pwm_right.ChangeDutyCycle(85)
+            pwm_right.ChangeDutyCycle(75)
         else:
             # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
             pwm_left.ChangeDutyCycle(100)
             pwm_right.ChangeDutyCycle(100)
     elif eje == 'x':
         if deviation > 0.01:  # Desviación positiva mayor a 1 cm
-            pwm_left.ChangeDutyCycle(80)
+            pwm_left.ChangeDutyCycle(70)
             pwm_right.ChangeDutyCycle(100)
         elif deviation < -0.01:  # Desviación negativa mayor a 1 cm
             pwm_left.ChangeDutyCycle(100)
-            pwm_right.ChangeDutyCycle(85)
+            pwm_right.ChangeDutyCycle(75)
         else:
             # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
             pwm_left.ChangeDutyCycle(100)
@@ -241,44 +244,45 @@ def adjust_movement(deviation, eje):
 
 # Función para manejar el comando T1
 def handle_T1():
-    # Primera parte recta (60 cm) - Corrección en eje Y
-    distancia_cm = 60
-    move_straight(distancia_cm, 100, 100, 'y')  # Velocidades calibradas
+    # Primera parte recta (70 cm) - Corrección en eje Y
+    distancia_cm = 70
+    move_straight(distancia_cm, 85, 100, 'y')  # Velocidades calibradas
     
     # Primera curva de 90 grados
-    turn_90_degrees(6200, 100, 0)
+    turn_90_degrees(5000, 100, 0)
     
-    # Segunda parte recta (20 cm) - Corrección en eje X
-    distancia_cm = 20
-    move_straight(distancia_cm, 100, 100, 'x')  # Velocidades calibradas
+    # Segunda parte recta (30 cm) - Corrección en eje X
+    distancia_cm = 40
+    move_straight(distancia_cm, 85, 100, 'x')  # Velocidades calibradas
     
     # Segunda curva de 90 grados
-    turn_90_degrees(7550, 100, 0)
-
-    rospy.loginfo("Esperando mensaje continue_move...")
-    rospy.wait_for_message('continue_move', String)
+    turn_90_degrees(6750, 100, 0)
     
     # Tercera parte recta (45 cm) - Corrección en eje Y
     distancia_cm = 45
-    move_straight(distancia_cm, 100, 100, 'y')  # Velocidades calibradas
+    move_straight(distancia_cm, 85, 100, 'y')  # Velocidades calibradas
+
+    rospy.loginfo("Esperando mensaje continue_move...")
+    time.sleep(0.1)  # Espera corta para asegurarse de que el búfer esté limpio
+    rospy.wait_for_message('continue_move', String)
 
     # Salida a terreno ideal
     distancia_cm = 60
-    move_straight(distancia_cm, 80, 80, 'y')  # Velocidad reducida
+    move_straight(distancia_cm, 70, 80, 'y')  # Velocidad reducida
 
     # Vuelta a 90 grados en su propio eje en terreno ideal
-    turn_in_place_90_degrees(3600, 70)  # Velocidad reducida
+    turn_in_place_90_degrees(800, 50)  # Velocidad reducida
 
     # Recta en terreno ideal
     distancia_cm = 200
-    move_straight(distancia_cm, 90, 90, 'x')  # Velocidad reducida
+    move_straight(distancia_cm, 55, 75, 'x')  # Velocidad reducida
 
     # Segunda vuelta de 90 grados en su propio eje y final
-    turn_in_place_90_degrees(3600, 70)  # Velocidad reducida
+    turn_in_place_90_degrees(800, 50)  # Velocidad reducida
 
     # Regreso a terreno anterior
     distancia_cm = 60
-    move_straight(distancia_cm, 68, 68, 'y')  # Velocidad reducida
+    move_straight(distancia_cm, 70, 80, 'y')  # Velocidad reducida
 
 # Función para manejar el comando T2
 def handle_T2():
@@ -287,6 +291,7 @@ def handle_T2():
     move_straight(distancia_cm, 100, 100, 'y')  # Velocidades calibradas
     
     rospy.loginfo("Esperando mensaje continue_move...")
+    time.sleep(0.1)  # Espera corta para asegurarse de que el búfer esté limpio
     rospy.wait_for_message('continue_move', String)
     
     # Mover 200 cm en reversa
@@ -306,25 +311,26 @@ def handle_T2():
     
     rospy.loginfo(f"Inicio del movimiento reversa: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while abs(encoder_left_count) < pulsos_deseados_izq or abs(encoder_right_count) < pulsos_deseados_der:
         rospy.loginfo(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
-        if should_stop:
-            pwm_left.ChangeDutyCycle(0)
-            pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Movimiento pausado por detección de objeto en movimiento")
-            while should_stop:
-                time.sleep(0.1)
-            pwm_left.ChangeDutyCycle(100)
-            pwm_right.ChangeDutyCycle(100)
-            rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     pwm_left.ChangeDutyCycle(0)  # Detener los motores
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Motores detenidos")
 
+def reset_state():
+    global encoder_left_count, encoder_right_count, deviation_y, deviation_x, lidar_data, theta_changes
+    encoder_left_count = 0
+    encoder_right_count = 0
+    deviation_y = 0
+    deviation_x = 0
+    lidar_data = []
+    theta_changes = []
+
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
+    reset_state()
     if data.data == "T1":
         handle_T1()
     elif data.data == "T2":
