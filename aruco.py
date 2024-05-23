@@ -144,7 +144,7 @@ def move_straight_30cm(pwm_left_speed, pwm_right_speed):
     encoder_left_count = 0
     encoder_right_count = 0
     
-    distancia_cm = 30
+    distancia_cm = 22
     pulsos_deseados_izq = distancia_cm * k_izq
     pulsos_deseados_der = distancia_cm * k_der
     
@@ -165,7 +165,7 @@ def move_straight_30cm(pwm_left_speed, pwm_right_speed):
 if __name__ == '__main__':
     try:
         rospy.loginfo("Ejecutando movimiento recto con detección de ArUco")
-        move_straight_30cm(100, 100)  # Llamar a la función con las velocidades deseadas
+        move_straight_30cm(80, 62)  # Llamar a la función con las velocidades deseadas
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
