@@ -170,4 +170,13 @@ def move_straight_27cm(pwm_left_speed, pwm_right_speed):
         rospy.loginfo(f"ArUco ID: {data['id']}, tamaño: {data['size']}, posición: {data['position']}, quaternion: {data['quaternion']}")
 
 if __name__ == '__main__':
-    try
+    try:
+        rospy.loginfo("Ejecutando movimiento recto con detección de ArUco")
+        move_straight_27cm(80, 62)  # Llamar a la función con las velocidades deseadas
+    except rospy.ROSInterruptException:
+        rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
+    finally:
+        pwm_left.stop()
+        pwm_right.stop()
+        GPIO.cleanup()
+        rospy.loginfo("GPIO cleanup and node shutdown.")
