@@ -83,6 +83,10 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed, file):
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
     pwm_left.ChangeDutyCycle(pwm_left_speed)
     pwm_right.ChangeDutyCycle(pwm_right_speed)
+
+    # Depuración
+    rospy.logdebug("Motores activados: IN1=HIGH, IN2=LOW, IN3=HIGH, IN4=LOW")
+    rospy.logdebug(f"Duty Cycle: pwm_left={pwm_left_speed}, pwm_right={pwm_right_speed}")
     
     # Calcular los pulsos deseados
     pulsos_deseados_izq = distance_cm * k_izq
