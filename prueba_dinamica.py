@@ -41,9 +41,6 @@ encoder_right_count = 0
 k_izq = 29.23
 k_der = 29.57
 
-# Variable global para control de detención
-should_stop = False
-
 # Publicador para los datos de obstáculos
 obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
 
@@ -60,23 +57,26 @@ def encoder_callback_der(channel):
 GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
 GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
-# Función para verificar obstáculos
-def check_obstacles():
-    global should_stop
-    should_stop = False
-    obstacles_msg = rospy.wait_for_message('/obstacles', Obstacles)
-    rospy.loginfo("Datos de obstáculos recibidos")
-    for circle in obstacles_msg.circles:
-        rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y}), velocidad=({circle.velocity.x}, {circle.velocity.y}), radio={circle.radius}")
-        if abs(circle.velocity.x) > MAX_SPEED or abs(circle.velocity.y) > MAX_SPEED:
-            if (circle.center.x ** 2 + circle.center.y ** 2) <= DETECTION_RADIUS ** 2:
-                should_stop = True
-                rospy.loginfo(f"Detenerse: Objeto detectado a distancia {(circle.center.x ** 2 + circle.center.y ** 2) ** 0.5:.2f}")
-                return
+# Guardar datos de obstáculos en un archivo
+def save_obstacle_data(filename, moving_distance_cm, moving=False):
+    start_time = rospy.get_time()
+    with open(filename, 'w') as file:
+        if moving:
+            move_straight_distance(moving_distance_cm, 50, 50, file)
+        else:
+            while rospy.get_time() - start_time < 5:  # Guardar datos por 5 segundos estático
+                obstacles_msg = rospy.wait_for_message('/obstacles', Obstacles)
+                log_msg = f"Tiempo: {rospy.get_time() - start_time:.2f}, Datos de obstáculos: {obstacles_msg}\n"
+                rospy.loginfo(log_msg)
+                file.write(log_msg)
 
-# Función para mover los motores en línea recta
-def move_straight_2m(pwm_left_speed, pwm_right_speed):
+# Función para mover el robot y verificar obstáculos
+def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed, file):
     global encoder_left_count, encoder_right_count, should_stop
+
+    # Inicializar los encoders y las PWM
+    encoder_left_count = 0
+    encoder_right_count = 0
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
@@ -84,46 +84,31 @@ def move_straight_2m(pwm_left_speed, pwm_right_speed):
     pwm_left.ChangeDutyCycle(pwm_left_speed)
     pwm_right.ChangeDutyCycle(pwm_right_speed)
     
-    encoder_left_count = 0
-    encoder_right_count = 0
-    
-    distancia_cm = 200
-    pulsos_deseados_izq = distancia_cm * k_izq
-    pulsos_deseados_der = distancia_cm * k_der
-    
+    # Calcular los pulsos deseados
+    pulsos_deseados_izq = distance_cm * k_izq
+    pulsos_deseados_der = distance_cm * k_der
     rospy.loginfo(f"Inicio del movimiento recto: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
-    
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
-        rospy.loginfo(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
-        check_obstacles()  # Verificar obstáculos en cada iteración
-        if should_stop:
-            pwm_left.ChangeDutyCycle(0)
-            pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Motores detenidos temporalmente")
-            time.sleep(5)  # Pausa por 5 segundos
-            rospy.loginfo("Revisando nuevamente después de la pausa")
-            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
-                check_obstacles()
-                if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
-                    time.sleep(5)
-                else:
-                    break
-            pwm_left.ChangeDutyCycle(pwm_left_speed)
-            pwm_right.ChangeDutyCycle(pwm_right_speed)
-            rospy.loginfo("Movimiento reanudado")
+
+    while encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der:
+        obstacles_msg = rospy.wait_for_message('/obstacles', Obstacles)
+        log_msg = f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}, Datos de obstáculos: {obstacles_msg}\n"
+        rospy.loginfo(log_msg)
+        file.write(log_msg)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
-    
-    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+
+    # Detener los motores
+    pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Movimiento completado: Motores detenidos")
 
 if __name__ == '__main__':
     try:
-        MAX_SPEED = 0.1  # Velocidad máxima para detenerse
-        DETECTION_RADIUS = 1.0  # Radio de detección para detenerse
-        rospy.loginfo("Ejecutando movimiento recto con detección de obstáculos")
-        move_straight_2m(100, 100)  # Llamar a la función con las velocidades deseadas
+        rospy.loginfo("Iniciando prueba de captura de datos estáticos.")
+        save_obstacle_data('datos_estaticos.txt', 0, moving=False)  # Guardar datos mientras estático por 5 segundos
+        
+        rospy.loginfo("Iniciando prueba de captura de datos en movimiento.")
+        save_obstacle_data('datos_movimiento.txt', 200, moving=True)  # Guardar datos mientras en movimiento por 2 metros
+        
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
