@@ -192,7 +192,7 @@ def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Curva a la derecha completada: Motores detenidos")
 
-# Suscribir al tópico de obstáculos al inicio
+# Suscribir al tópico de obstáculos al iniciobkjbj
 subscribe_to_obstacles()
 
 if __name__ == '__main__':
