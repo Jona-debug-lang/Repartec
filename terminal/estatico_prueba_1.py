@@ -46,8 +46,8 @@ should_stop = False
 obstacle_position = None
 
 # Rango de detección de obstáculos (en metros)
-detection_range_min = 0.10
-detection_range_max = 0.12
+detection_range_min = 0.15
+detection_range_max = 0.20
 
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
@@ -151,6 +151,9 @@ def evade_obstacle():
 # Función para realizar una curva a la izquierda suavemente
 def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
     global encoder_left_count, encoder_right_count
+    encoder_left_count = 0
+    encoder_right_count = 0
+
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
@@ -158,8 +161,6 @@ def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
     pwm_left.ChangeDutyCycle(pwm_left_speed)
     pwm_right.ChangeDutyCycle(pwm_right_speed)
 
-    encoder_left_count = 0
-    encoder_right_count = 0
     rospy.loginfo(f"Iniciando curva a la izquierda: Pulsos deseados izq: {pulses_turn}")
     
     while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
@@ -173,6 +174,9 @@ def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
 # Función para realizar una curva a la derecha suavemente
 def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
     global encoder_left_count, encoder_right_count
+    encoder_left_count = 0
+    encoder_right_count = 0
+
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
@@ -180,8 +184,6 @@ def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
     pwm_left.ChangeDutyCycle(pwm_left_speed)
     pwm_right.ChangeDutyCycle(pwm_right_speed)
 
-    encoder_left_count = 0
-    encoder_right_count = 0
     rospy.loginfo(f"Iniciando curva a la derecha: Pulsos deseados izq: {pulses_turn}")
     
     while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
@@ -192,13 +194,13 @@ def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Curva a la derecha completada: Motores detenidos")
 
-# Suscribir al tópico de obstáculos al iniciobkjbj
+# Suscribir al tópico de obstáculos al inicio
 subscribe_to_obstacles()
 
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando movimiento y evasión de obstáculos")
-        move_straight_distance(200, 95, 88)  # Mover hacia adelante por 2 metros a una velocidad más lenta
+        move_straight_distance(200, 40, 50)  # Mover hacia adelante por 2 metros a una velocidad más lenta
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
