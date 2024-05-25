@@ -46,8 +46,8 @@ should_stop = False
 obstacle_position = None
 
 # Rango de detección de obstáculos (en metros)
-detection_range_min = 0.15
-detection_range_max = 0.20
+detection_range_min = 0.10
+detection_range_max = 0.12
 
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
@@ -136,14 +136,14 @@ def evade_obstacle():
         # Implementa la lógica para evadir el obstáculo con una curva suave
         if obstacle_position[1] > 0:  # Obstáculo a la derecha
             # Girar a la izquierda suavemente
-            curve_left(1500, 40, 60)  # Ajustar pulsos y velocidad para curva más lenta
-            move_straight_distance(20, 45, 50)  # Mover 20 cm hacia adelante
-            curve_right(1500, 60, 40)  # Girar a la derecha suavemente para volver a la ruta
+            curve_left(1500, 40, 90)  # Ajustar pulsos y velocidad para curva más lenta
+            move_straight_distance(10, 85, 100)  # Mover 20 cm hacia adelante
+            curve_right(1500, 100, 60)  # Girar a la derecha suavemente para volver a la ruta
         else:  # Obstáculo a la izquierda
             # Girar a la derecha suavemente
-            curve_right(1500, 60, 40)  # Ajustar pulsos y velocidad para curva más lenta
-            move_straight_distance(20, 45, 50)  # Mover 20 cm hacia adelante
-            curve_left(1500, 40, 60)  # Girar a la izquierda suavemente para volver a la ruta
+            curve_right(1500, 100, 60)  # Ajustar pulsos y velocidad para curva más lenta
+            move_straight_distance(20, 85, 100)  # Mover 20 cm hacia adelante
+            curve_left(1500, 40, 90)  # Girar a la izquierda suavemente para volver a la ruta
 
         # Reactivar la suscripción después de la evasión
         subscribe_to_obstacles()
@@ -198,7 +198,7 @@ subscribe_to_obstacles()
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando movimiento y evasión de obstáculos")
-        move_straight_distance(200, 40, 60)  # Mover hacia adelante por 2 metros a una velocidad más lenta
+        move_straight_distance(200, 85, 100)  # Mover hacia adelante por 2 metros a una velocidad más lenta
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
