@@ -64,6 +64,7 @@ GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 def obstacles_callback(data):
     global should_stop, obstacle_position
     for circle in data.circles:
+        rospy.logdebug(f"Datos del círculo: posición=({circle.center.x}, {circle.center.y}), radio={circle.radius}")
         if abs(circle.center.x) <= 1.0 and abs(circle.center.y) <= 0.5:  # Ajustar según el tamaño y posición del termo
             should_stop = True
             obstacle_position = (circle.center.x, circle.center.y)
@@ -95,7 +96,7 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
     pulsos_deseados_der = distance_cm * k_der
     rospy.loginfo(f"Inicio del movimiento recto: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
 
-    while encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
         rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
 
         if should_stop:
