@@ -110,43 +110,66 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Movimiento completado: Motores detenidos")
 
-# Función para evadir el obstáculo
+# Función para evadir el obstáculo con curvas suaves
 def evade_obstacle():
     global obstacle_position
     if obstacle_position:
         rospy.loginfo(f"Evitando obstáculo en posición: {obstacle_position}")
-        # Implementa la lógica para evadir el obstáculo
+        # Implementa la lógica para evadir el obstáculo con una curva suave
         if obstacle_position[1] > 0:  # Obstáculo a la derecha
-            # Girar a la izquierda
-            turn_90_degrees(5000, 100, 0)
+            # Girar a la izquierda suavemente
+            curve_left(3000, 70, 100)
             move_straight_distance(20, 85, 100)  # Mover 20 cm hacia adelante
-            turn_90_degrees(5000, 0, 100)  # Girar a la derecha para volver a la ruta
+            curve_right(3000, 100, 70)  # Girar a la derecha suavemente para volver a la ruta
         else:  # Obstáculo a la izquierda
-            # Girar a la derecha
-            turn_90_degrees(5000, 0, 100)
+            # Girar a la derecha suavemente
+            curve_right(3000, 100, 70)
             move_straight_distance(20, 85, 100)  # Mover 20 cm hacia adelante
-            turn_90_degrees(5000, 100, 0)  # Girar a la izquierda para volver a la ruta
+            curve_left(3000, 70, 100)  # Girar a la izquierda suavemente para volver a la ruta
 
-def turn_90_degrees(pulses_turn, pwm_left_speed, pwm_right_speed):
+# Función para realizar una curva a la izquierda suavemente
+def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
     global encoder_left_count, encoder_right_count
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH if pwm_left_speed > 0 else GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW if pwm_left_speed > 0 else GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH if pwm_right_speed > 0 else GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW if pwm_right_speed > 0 else GPIO.HIGH)
-    pwm_left.ChangeDutyCycle(abs(pwm_left_speed))
-    pwm_right.ChangeDutyCycle(abs(pwm_right_speed))
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(pwm_left_speed)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
 
     encoder_left_count = 0
     encoder_right_count = 0
-    rospy.loginfo(f"Iniciando giro: Pulsos deseados izq: {pulses_turn}")
+    rospy.loginfo(f"Iniciando curva a la izquierda: Pulsos deseados izq: {pulses_turn}")
     
-    while encoder_left_count < pulses_turn or encoder_right_count < pulses_turn:
+    while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
         rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
 
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo("Giro completado: Motores detenidos")
+    rospy.loginfo("Curva a la izquierda completada: Motores detenidos")
+
+# Función para realizar una curva a la derecha suavemente
+def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
+    global encoder_left_count, encoder_right_count
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(pwm_left_speed)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
+
+    encoder_left_count = 0
+    encoder_right_count = 0
+    rospy.loginfo(f"Iniciando curva a la derecha: Pulsos deseados izq: {pulses_turn}")
+    
+    while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
+        rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+
+    pwm_left.ChangeDutyCycle(0)
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Curva a la derecha completada: Motores detenidos")
 
 if __name__ == '__main__':
     try:
