@@ -45,6 +45,10 @@ k_der = 29.57
 should_stop = False
 obstacle_position = None
 
+# Rango de detección de obstáculos (en metros)
+detection_range_min = 0.15
+detection_range_max = 0.20
+
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
     global encoder_left_count
@@ -64,14 +68,17 @@ GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 def obstacles_callback(data):
     global should_stop, obstacle_position
     for circle in data.circles:
-        rospy.logdebug(f"Datos del círculo: posición=({circle.center.x}, {circle.center.y}), radio={circle.radius}")
-        if abs(circle.center.x) <= 1.0 and abs(circle.center.y) <= 0.5:  # Ajustar según el tamaño y posición del termo
+        distance_to_obstacle = (circle.center.x ** 2 + circle.center.y ** 2) ** 0.5
+        rospy.logdebug(f"Datos del círculo: posición=({circle.center.x}, {circle.center.y}), radio={circle.radius}, distancia={distance_to_obstacle}")
+        if detection_range_min <= distance_to_obstacle <= detection_range_max:  # Ajustar según el tamaño y posición del termo
             should_stop = True
             obstacle_position = (circle.center.x, circle.center.y)
-            rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y})")
+            rospy.loginfo(f"Obstáculo detectado dentro del rango: posición=({circle.center.x}, {circle.center.y}), distancia={distance_to_obstacle}")
             return
 
-rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
+# Función para suscribirse al tópico de obstáculos
+def subscribe_to_obstacles():
+    rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
 
 # Función para mover el robot y verificar obstáculos
 def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
@@ -96,13 +103,19 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
     pulsos_deseados_der = distance_cm * k_der
     rospy.loginfo(f"Inicio del movimiento recto: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
 
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der:
         rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
 
         if should_stop:
-            rospy.loginfo("Iniciando evasión de obstáculo")
+            rospy.loginfo("Obstáculo detectado, deteniendo para analizar")
+            pwm_left.ChangeDutyCycle(0)
+            pwm_right.ChangeDutyCycle(0)
+            time.sleep(2)  # Pausa para analizar el obstáculo
             evade_obstacle()
             should_stop = False
+            obstacle_position = None  # Reset obstacle position
+            pwm_left.ChangeDutyCycle(pwm_left_speed)
+            pwm_right.ChangeDutyCycle(pwm_right_speed)
 
         time.sleep(0.01)  # Ajusta este valor según sea necesario
 
@@ -116,17 +129,23 @@ def evade_obstacle():
     global obstacle_position
     if obstacle_position:
         rospy.loginfo(f"Evitando obstáculo en posición: {obstacle_position}")
+        # Desactivar la suscripción para evitar ruido durante la evasión
+        obstacle_sub.unregister()
+        
         # Implementa la lógica para evadir el obstáculo con una curva suave
         if obstacle_position[1] > 0:  # Obstáculo a la derecha
             # Girar a la izquierda suavemente
-            curve_left(3000, 70, 100)
-            move_straight_distance(20, 85, 100)  # Mover 20 cm hacia adelante
-            curve_right(3000, 100, 70)  # Girar a la derecha suavemente para volver a la ruta
+            curve_left(1500, 40, 60)  # Ajustar pulsos y velocidad para curva más lenta
+            move_straight_distance(20, 45, 50)  # Mover 20 cm hacia adelante
+            curve_right(1500, 60, 40)  # Girar a la derecha suavemente para volver a la ruta
         else:  # Obstáculo a la izquierda
             # Girar a la derecha suavemente
-            curve_right(3000, 100, 70)
-            move_straight_distance(20, 85, 100)  # Mover 20 cm hacia adelante
-            curve_left(3000, 70, 100)  # Girar a la izquierda suavemente para volver a la ruta
+            curve_right(1500, 60, 40)  # Ajustar pulsos y velocidad para curva más lenta
+            move_straight_distance(20, 45, 50)  # Mover 20 cm hacia adelante
+            curve_left(1500, 40, 60)  # Girar a la izquierda suavemente para volver a la ruta
+
+        # Reactivar la suscripción después de la evasión
+        subscribe_to_obstacles()
 
 # Función para realizar una curva a la izquierda suavemente
 def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
@@ -172,10 +191,13 @@ def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Curva a la derecha completada: Motores detenidos")
 
+# Suscribir al tópico de obstáculos al inicio
+obstacle_sub = rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
+
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando movimiento y evasión de obstáculos")
-        move_straight_distance(200, 50, 50)  # Mover hacia adelante por 2 metros
+        move_straight_distance(200, 40, 40)  # Mover hacia adelante por 2 metros a una velocidad más lenta
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
