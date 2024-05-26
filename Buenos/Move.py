@@ -67,7 +67,7 @@ def filtered_obstacles_callback(data):
     global should_stop
     filtered_data = json.loads(data.data)
     for entry in filtered_data:
-        distance_to_obstacle = entry['center_x']
+        distance_to_obstacle = abs(entry['center_x'])  # Usar el valor absoluto para la distancia
         rospy.logdebug(f"Datos del obstáculo: center_x={distance_to_obstacle}")
         if distance_to_obstacle <= detection_threshold:
             should_stop = True

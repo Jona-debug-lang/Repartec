@@ -18,7 +18,7 @@ def obstacles_callback(data):
         if not hasattr(circle, 'center') or not hasattr(circle.center, 'x') or not hasattr(circle, 'radius'):
             continue
         obstacle_info = {
-            'center_x': abs(circle.center.y),  # Usar el eje Y como distancia frontal
+            'center_x': abs(circle.center.x),  # Usar el eje X como distancia frontal
             'radius': circle.radius
         }
         filtered_obstacles.append(obstacle_info)
