@@ -123,7 +123,7 @@ def turn_in_place_90_degrees(pulses_turn, pwm_speed):
 def handle_T2_2():
     # Salida a terreno ideal
     distancia_cm = 60
-    move_straight(distancia_cm, 70, 80)``
+    move_straight(distancia_cm, 70, 80)
     
     # Vuelta a 90 grados en su propio eje en terreno ideal
     turn_in_place_90_degrees(800, 50)
