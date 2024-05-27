@@ -136,7 +136,7 @@ subscribe_to_filtered_obstacles()
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando movimiento y detección de obstáculos")
-        move_straight_distance(100, 98, 86)  # Mover hacia adelante por 1 metro a una velocidad más lenta
+        move_straight_distance(100, 78, 66)  # Mover hacia adelante por 1 metro a una velocidad más lenta
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
