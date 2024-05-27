@@ -87,8 +87,8 @@ def adjust_movement_backward(deviation):
         pwm_left.ChangeDutyCycle(96)
         pwm_right.ChangeDutyCycle(95)
     elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
-        pwm_left.ChangeDutyCycle(95)
-        pwm_right.ChangeDutyCycle(95)
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(80)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(96)
