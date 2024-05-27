@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Inicializar nodo ROS
-rospy.init_node('reverse_2m', anonymous=True)
+rospy.init_node('trajectory_t2_1', anonymous=True)
 
 # Configuración de los GPIO
 GPIO.setmode(GPIO.BCM)
@@ -44,37 +44,37 @@ k_der = 29.57
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
     global encoder_left_count
-    encoder_left_count -= 1  # Contar hacia atrás
+    encoder_left_count += 1
 
 def encoder_callback_der(channel):
     global encoder_right_count
-    encoder_right_count -= 1  # Contar hacia atrás
+    encoder_right_count += 1
 
 # Configura las interrupciones de los encoders
 GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
 GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
-# Función para mover los motores en reversa
-def move_reverse_2m():
+# Función para mover los motores en línea recta
+def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed):
     global start_time, end_time, encoder_left_count, encoder_right_count
     
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
-    pwm_left.ChangeDutyCycle(85)
-    pwm_right.ChangeDutyCycle(100)
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(pwm_left_speed)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
     
     encoder_left_count = 0
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 200 * k_izq  # 2 metros * k_izq
-    pulsos_deseados_der = 200 * k_der  # 2 metros * k_der
+    pulsos_deseados_izq = distancia_cm * k_izq
+    pulsos_deseados_der = distancia_cm * k_der
     
-    rospy.loginfo("Inicio del movimiento reversa de 2 metros")
+    rospy.loginfo(f"Inicio del movimiento recto: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
     
-    while abs(encoder_left_count) < pulsos_deseados_izq or abs(encoder_right_count) < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
@@ -87,9 +87,58 @@ def move_reverse_2m():
     rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Time elapsed: {end_time - start_time:.2f} seconds")
 
-# Función para manejar el comando T1.2
-def handle_T1_2():
-    move_reverse_2m()
+# Función para girar 90 grados
+def turn_90_degrees(pulses_turn, pwm_left_speed, pwm_right_speed):
+    global start_time, end_time, encoder_left_count, encoder_right_count
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(pwm_left_speed)
+    pwm_right.ChangeDutyCycle(pwm_right_speed)
+    
+    encoder_left_count = 0
+    encoder_right_count = 0
+    start_time = time.time()
+    
+    pulsos_deseados_izq = pulses_turn
+    
+    rospy.loginfo(f"Inicio de la curva: Pulsos deseados izq: {pulsos_deseados_izq}")
+    
+    while encoder_left_count < pulsos_deseados_izq:
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+    
+    end_time = time.time()
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Motores detenidos")
+
+    # Publicar los resultados finales
+    rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
+    rospy.loginfo(f"Time elapsed: {end_time - start_time:.2f} seconds")
+
+# Función para manejar el comando T2.1
+def handle_T2_1():
+    # Primera parte recta (70 cm)
+    distancia_cm = 70
+    move_straight(distancia_cm, 85, 100)
+    
+    # Primera curva de 90 grados
+    turn_90_degrees(5000, 100, 0)
+    
+    # Segunda parte recta (30 cm)
+    distancia_cm = 40
+    move_straight(distancia_cm, 85, 100)
+    
+    # Segunda curva de 90 grados
+    turn_90_degrees(6750, 100, 0)
+    
+    # Tercera parte recta (45 cm)
+    distancia_cm = 45
+    move_straight(distancia_cm, 85, 100)
+
     done_pub.publish("Done")
     rospy.loginfo("Mensaje 'Done' publicado")
 
@@ -101,8 +150,8 @@ def reset_state():
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
     reset_state()
-    if data.data == "T1.2":
-        handle_T1_2()
+    if data.data == "T2.1":
+        handle_T2_1()
 
 # Publicador para el mensaje "finish_move"
 done_pub = rospy.Publisher('finish_move', String, queue_size=10)

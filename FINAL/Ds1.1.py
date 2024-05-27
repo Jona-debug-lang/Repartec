@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Inicializar nodo ROS
-rospy.init_node('reverse_2m', anonymous=True)
+rospy.init_node('correction_y_2m', anonymous=True)
 
 # Configuración de los GPIO
 GPIO.setmode(GPIO.BCM)
@@ -41,27 +41,52 @@ encoder_right_count = 0
 k_izq = 29.23
 k_der = 29.57
 
+# Variables para la corrección de ruta
+deviation_y = 0
+
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
     global encoder_left_count
-    encoder_left_count -= 1  # Contar hacia atrás
+    encoder_left_count += 1
 
 def encoder_callback_der(channel):
     global encoder_right_count
-    encoder_right_count -= 1  # Contar hacia atrás
+    encoder_right_count += 1
 
 # Configura las interrupciones de los encoders
 GPIO.add_event_detect(ENCODER_IZQ, GPIO.RISING, callback=encoder_callback_izq)
 GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
-# Función para mover los motores en reversa
-def move_reverse_2m():
-    global start_time, end_time, encoder_left_count, encoder_right_count
+# Suscripción a la posición del Lidar
+def pose_callback(data):
+    global deviation_y
+    deviation_y = data.y
+    rospy.loginfo("Received Lidar data: x={:.3f}, y={:.3f}, theta={:.2f}".format(data.x, data.y, data.theta))
+
+rospy.Subscriber('simple_pose', Pose2D, pose_callback)
+
+# Función para ajustar el movimiento basado en la desviación del Lidar
+def adjust_movement(deviation):
+    if deviation > 0.01:  # Desviación positiva mayor a 1 cm
+        pwm_left.ChangeDutyCycle(70)  # Ajustar duty cycle para corrección
+        pwm_right.ChangeDutyCycle(100)
+    elif deviation < -0.01:  # Desviación negativa mayor a 1 cm
+        pwm_left.ChangeDutyCycle(100)
+        pwm_right.ChangeDutyCycle(75)
+    else:
+        # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
+        pwm_left.ChangeDutyCycle(100)
+        pwm_right.ChangeDutyCycle(100)
+    rospy.loginfo(f"Adjusting due to Y deviation: {deviation:.3f}")
+
+# Función para mover los motores en línea recta con corrección de ruta
+def move_straight_with_correction(distancia_cm):
+    global start_time, end_time, encoder_left_count, encoder_right_count, deviation_y
     
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
     pwm_left.ChangeDutyCycle(85)
     pwm_right.ChangeDutyCycle(100)
     
@@ -69,12 +94,13 @@ def move_reverse_2m():
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 200 * k_izq  # 2 metros * k_izq
-    pulsos_deseados_der = 200 * k_der  # 2 metros * k_der
+    pulsos_deseados_izq = distancia_cm * k_izq
+    pulsos_deseados_der = distancia_cm * k_der
     
-    rospy.loginfo("Inicio del movimiento reversa de 2 metros")
+    rospy.loginfo(f"Inicio del movimiento recto con corrección: Pulsos deseados izq: {pulsos_deseados_izq}, der: {pulsos_deseados_der}")
     
-    while abs(encoder_left_count) < pulsos_deseados_izq or abs(encoder_right_count) < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+        adjust_movement(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
@@ -87,22 +113,24 @@ def move_reverse_2m():
     rospy.loginfo(f"Final counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Time elapsed: {end_time - start_time:.2f} seconds")
 
-# Función para manejar el comando T1.2
-def handle_T1_2():
-    move_reverse_2m()
+# Función para manejar el comando D1.1
+def handle_D1_1():
+    distancia_cm = 200
+    move_straight_with_correction(distancia_cm)
     done_pub.publish("Done")
     rospy.loginfo("Mensaje 'Done' publicado")
 
 def reset_state():
-    global encoder_left_count, encoder_right_count
+    global encoder_left_count, encoder_right_count, deviation_y
     encoder_left_count = 0
     encoder_right_count = 0
+    deviation_y = 0
 
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
     reset_state()
-    if data.data == "T1.2":
-        handle_T1_2()
+    if data.data == "D1.1":
+        handle_D1_1()
 
 # Publicador para el mensaje "finish_move"
 done_pub = rospy.Publisher('finish_move', String, queue_size=10)
