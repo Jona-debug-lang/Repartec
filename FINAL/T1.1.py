@@ -62,8 +62,8 @@ def move_straight_2m():
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(85)
-    pwm_right.ChangeDutyCycle(100)
+    pwm_left.ChangeDutyCycle(96)
+    pwm_right.ChangeDutyCycle(88)
     
     encoder_left_count = 0
     encoder_right_count = 0
