@@ -48,6 +48,9 @@ obstacle_position_x = None
 # Rango de detección de obstáculos (en metros)
 detection_threshold = 0.40
 
+# Frecuencia de ejecución
+rate = rospy.Rate(4)  # 10 Hz
+
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
     global encoder_left_count
@@ -119,7 +122,7 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
                 pwm_left.ChangeDutyCycle(pwm_left_speed)
                 pwm_right.ChangeDutyCycle(pwm_right_speed)
 
-            time.sleep(0.01)  # Ajusta este valor según sea necesario
+            rate.sleep()  # Mantener la frecuencia deseada
     except KeyboardInterrupt:
         rospy.loginfo("Interrupción de ROS detectada (Ctrl+C). Apagando el nodo.")
         pwm_left.ChangeDutyCycle(0)
@@ -132,7 +135,7 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Movimiento completado: Motores detenidos")
 
-# Función para evadir el obstáculo con curvas suaves
+# Función para evadir el obstáculo con una media luna
 def evade_obstacle():
     global obstacle_position_x
     if obstacle_position_x is not None:
@@ -141,11 +144,11 @@ def evade_obstacle():
         obstacle_sub.unregister()
         
         # Implementa la lógica para evadir el obstáculo con una curva suave
-        # Curva hacia la derecha si el obstáculo está frente al robot
+        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
         curve_right(1500, 70, 30)  # Girar a la derecha suavemente
-        move_straight_distance(10, 30, 35)  # Mover 10 cm hacia adelante
-        curve_left(1500, 30, 80)  # Girar a la izquierda suavemente para volver a la ruta
-        move_straight_distance(10, 30, 35)  # Mover otros 10 cm hacia adelante
+        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
+        curve_left(1500, 30, 70)  # Girar a la izquierda suavemente para volver a la ruta
+        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
 
         # Reactivar la suscripción después de la evasión
         subscribe_to_filtered_obstacles()
