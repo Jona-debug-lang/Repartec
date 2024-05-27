@@ -29,9 +29,13 @@ def obstacles_callback(data):
 # Suscribirse al tópico de obstáculos
 rospy.Subscriber('/obstacles', Obstacles, obstacles_callback)
 
+# Establecer la frecuencia de procesamiento
+rate = rospy.Rate(10)  # 10 Hz
+
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando nodo de filtrado de obstáculos")
-        rospy.spin()
+        while not rospy.is_shutdown():
+            rate.sleep()
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
