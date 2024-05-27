@@ -144,11 +144,10 @@ def evade_obstacle():
         obstacle_sub.unregister()
         
         # Implementa la lógica para evadir el obstáculo con una curva suave
-        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
-        curve_right(1500, 70, 30)  # Girar a la derecha suavemente
-        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
-        curve_left(1500, 30, 70)  # Girar a la izquierda suavemente para volver a la ruta
-        move_straight_distance(10, 85, 100)  # Mover 10 cm hacia adelante
+        curve_right(250, 90, 10)  # Girar a la derecha suavemente
+        move_straight_distance(10, 98, 86)  # Mover 10 cm hacia adelante
+        curve_left(250, 10, 90)  # Girar a la izquierda suavemente para volver a la ruta
+        move_straight_distance(10, 98, 86)  # Mover 10 cm hacia adelante
 
         # Reactivar la suscripción después de la evasión
         subscribe_to_filtered_obstacles()
@@ -205,7 +204,7 @@ subscribe_to_filtered_obstacles()
 if __name__ == '__main__':
     try:
         rospy.loginfo("Iniciando movimiento y evasión de obstáculos")
-        move_straight_distance(100, 30, 35)  # Mover hacia adelante por 1 metro a una velocidad más lenta
+        move_straight_distance(100, 98, 86)  # Mover hacia adelante por 1 metro a una velocidad más lenta
     except rospy.ROSInterruptException:
         rospy.loginfo("Interrupción de ROS detectada. Apagando el nodo.")
     finally:
