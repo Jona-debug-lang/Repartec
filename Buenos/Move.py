@@ -49,7 +49,7 @@ obstacle_position_x = None
 detection_threshold = 0.40
 
 # Frecuencia de ejecución
-rate = rospy.Rate(4)  # 10 Hz
+rate = rospy.Rate(4)  # 4 Hz
 
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
@@ -112,15 +112,10 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
             rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
 
             if should_stop:
-                rospy.loginfo("Obstáculo detectado, deteniendo para analizar")
+                rospy.loginfo("Obstáculo detectado, deteniendo el movimiento")
                 pwm_left.ChangeDutyCycle(0)
                 pwm_right.ChangeDutyCycle(0)
-                time.sleep(2)  # Pausa para analizar el obstáculo
-                evade_obstacle()
-                should_stop = False
-                obstacle_position_x = None  # Reset obstacle position
-                pwm_left.ChangeDutyCycle(pwm_left_speed)
-                pwm_right.ChangeDutyCycle(pwm_right_speed)
+                return  # Terminar el código después de detenerse
 
             rate.sleep()  # Mantener la frecuencia deseada
     except KeyboardInterrupt:
@@ -134,69 +129,6 @@ def move_straight_distance(distance_cm, pwm_left_speed, pwm_right_speed):
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Movimiento completado: Motores detenidos")
-
-# Función para evadir el obstáculo con una media luna
-def evade_obstacle():
-    global obstacle_position_x
-    if obstacle_position_x is not None:
-        rospy.loginfo(f"Evitando obstáculo en posición X: {obstacle_position_x}")
-        # Desactivar la suscripción para evitar ruido durante la evasión
-        obstacle_sub.unregister()
-        
-        # Implementa la lógica para evadir el obstáculo con una curva suave
-        curve_right(250, 90, 10)  # Girar a la derecha suavemente
-        move_straight_distance(10, 98, 86)  # Mover 10 cm hacia adelante
-        curve_left(250, 10, 90)  # Girar a la izquierda suavemente para volver a la ruta
-        move_straight_distance(10, 98, 86)  # Mover 10 cm hacia adelante
-
-        # Reactivar la suscripción después de la evasión
-        subscribe_to_filtered_obstacles()
-
-# Función para realizar una curva a la izquierda suavemente
-def curve_left(pulses_turn, pwm_left_speed, pwm_right_speed):
-    global encoder_left_count, encoder_right_count
-    encoder_left_count = 0
-    encoder_right_count = 0
-
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(pwm_left_speed)
-    pwm_right.ChangeDutyCycle(pwm_right_speed)
-
-    rospy.loginfo(f"Iniciando curva a la izquierda: Pulsos deseados izq: {pulses_turn}")
-    
-    while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
-        rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
-        time.sleep(0.01)  # Ajusta este valor según sea necesario
-
-    pwm_left.ChangeDutyCycle(0)
-    pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo("Curva a la izquierda completada: Motores detenidos")
-
-# Función para realizar una curva a la derecha suavemente
-def curve_right(pulses_turn, pwm_left_speed, pwm_right_speed):
-    global encoder_left_count, encoder_right_count
-    encoder_left_count = 0
-    encoder_right_count = 0
-
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(pwm_left_speed)
-    pwm_right.ChangeDutyCycle(pwm_right_speed)
-
-    rospy.loginfo(f"Iniciando curva a la derecha: Pulsos deseados izq: {pulses_turn}")
-    
-    while encoder_left_count < pulses_turn and encoder_right_count < pulses_turn:
-        rospy.logdebug(f"Pulsos actuales: izq: {encoder_left_count}, der: {encoder_right_count}")
-        time.sleep(0.01)  # Ajusta este valor según sea necesario
-
-    pwm_left.ChangeDutyCycle(0)
-    pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo("Curva a la derecha completada: Motores detenidos")
 
 # Suscribir al tópico filtrado de obstáculos al inicio
 subscribe_to_filtered_obstacles()
