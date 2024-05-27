@@ -37,12 +37,13 @@ pwm_right.start(0)
 encoder_left_count = 0
 encoder_right_count = 0
 
+# Variables para la corrección de ruta y detección de distancia
+deviation_y = 0
+current_x = 0
+
 # Constantes k basadas en tus datos (pulsos por centímetro)
 k_izq = 29.23
 k_der = 29.57
-
-# Variables para la corrección de ruta
-deviation_y = 0
 
 # Función de callback para los encoders
 def encoder_callback_izq(channel):
@@ -59,8 +60,9 @@ GPIO.add_event_detect(ENCODER_DER, GPIO.RISING, callback=encoder_callback_der)
 
 # Suscripción a la posición del Lidar
 def pose_callback(data):
-    global deviation_y
+    global deviation_y, current_x
     deviation_y = data.y
+    current_x = data.x
     rospy.loginfo("Received Lidar data: x={:.3f}, y={:.3f}, theta={:.2f}".format(data.x, data.y, data.theta))
 
 rospy.Subscriber('simple_pose', Pose2D, pose_callback)
@@ -81,7 +83,7 @@ def adjust_movement(deviation):
 
 # Función para mover los motores en línea recta hacia adelante con corrección
 def move_straight_2m_forward():
-    global start_time, end_time, encoder_left_count, encoder_right_count
+    global start_time, end_time, encoder_left_count, encoder_right_count, current_x
     
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
@@ -99,7 +101,7 @@ def move_straight_2m_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while (encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der) or current_x < 2.05:
         adjust_movement(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
@@ -133,7 +135,7 @@ def move_straight_2m_backward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der:
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
@@ -158,10 +160,11 @@ def handle_T1():
     rospy.loginfo("Mensaje 'Backward Done' publicado")
 
 def reset_state():
-    global encoder_left_count, encoder_right_count, deviation_y
+    global encoder_left_count, encoder_right_count, deviation_y, current_x
     encoder_left_count = 0
     encoder_right_count = 0
     deviation_y = 0
+    current_x = 0
 
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
