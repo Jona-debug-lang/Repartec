@@ -101,7 +101,7 @@ def move_straight_2m_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -2.0:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -1.75:
         adjust_movement(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
