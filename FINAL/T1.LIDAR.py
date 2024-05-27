@@ -68,11 +68,11 @@ rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 # Función para ajustar el movimiento basado en la desviación del Lidar
 def adjust_movement(deviation):
     if deviation > 0.08:  # Desviación positiva mayor a 8 cm
-        pwm_left.ChangeDutyCycle(70)  # Ajustar duty cycle para corrección
-        pwm_right.ChangeDutyCycle(100)
+        pwm_left.ChangeDutyCycle(97)  # Ajustar duty cycle para corrección
+        pwm_right.ChangeDutyCycle(87)
     elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
-        pwm_left.ChangeDutyCycle(100)
-        pwm_right.ChangeDutyCycle(70)
+        pwm_left.ChangeDutyCycle(97)
+        pwm_right.ChangeDutyCycle(65)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(97)
