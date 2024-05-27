@@ -67,8 +67,8 @@ def pose_callback(data):
 
 rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 
-# Función para ajustar el movimiento basado en la desviación del Lidar
-def adjust_movement(deviation):
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia adelante
+def adjust_movement_forward(deviation):
     if deviation > 0.08:  # Desviación positiva mayor a 8 cm
         pwm_left.ChangeDutyCycle(97)  # Ajustar duty cycle para corrección
         pwm_right.ChangeDutyCycle(87)
@@ -79,7 +79,21 @@ def adjust_movement(deviation):
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(97)
         pwm_right.ChangeDutyCycle(87)
-    rospy.loginfo(f"Adjusting due to Y deviation: {deviation:.3f}")
+    rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
+
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia atrás
+def adjust_movement_backward(deviation):
+    if deviation > 0.08:  # Desviación positiva mayor a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
+        pwm_left.ChangeDutyCycle(95)
+        pwm_right.ChangeDutyCycle(95)
+    else:
+        # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    rospy.loginfo(f"Adjusting due to Y deviation (backward): {deviation:.3f}")
 
 # Función para mover los motores en línea recta hacia adelante con corrección
 def move_straight_2m_forward():
@@ -102,7 +116,7 @@ def move_straight_2m_forward():
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
     while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -1.75:
-        adjust_movement(deviation_y)
+        adjust_movement_forward(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
@@ -115,7 +129,7 @@ def move_straight_2m_forward():
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
 
-# Función para mover los motores en línea recta hacia atrás
+# Función para mover los motores en línea recta hacia atrás con corrección
 def move_straight_2m_backward():
     global start_time, end_time, encoder_left_count, encoder_right_count, current_x
     
@@ -136,6 +150,7 @@ def move_straight_2m_backward():
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
     
     while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+        adjust_movement_backward(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
