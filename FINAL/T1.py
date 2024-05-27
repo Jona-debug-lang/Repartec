@@ -62,8 +62,8 @@ def move_straight_2m_forward():
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(96)
-    pwm_right.ChangeDutyCycle(88)
+    pwm_left.ChangeDutyCycle(97)
+    pwm_right.ChangeDutyCycle(87)
     
     encoder_left_count = 0
     encoder_right_count = 0
@@ -96,7 +96,7 @@ def move_straight_2m_backward():
     GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
     pwm_left.ChangeDutyCycle(96)
-    pwm_right.ChangeDutyCycle(88)
+    pwm_right.ChangeDutyCycle(95)
     
     encoder_left_count = 0
     encoder_right_count = 0
