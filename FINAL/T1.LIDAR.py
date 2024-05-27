@@ -101,7 +101,7 @@ def move_straight_2m_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
-    while (encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der) or current_x < 2.05:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -2.0:
         adjust_movement(deviation_y)
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
@@ -117,7 +117,7 @@ def move_straight_2m_forward():
 
 # Función para mover los motores en línea recta hacia atrás
 def move_straight_2m_backward():
-    global start_time, end_time, encoder_left_count, encoder_right_count
+    global start_time, end_time, encoder_left_count, encoder_right_count, current_x
     
     GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
@@ -135,7 +135,7 @@ def move_straight_2m_backward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
     
-    while encoder_left_count < pulsos_deseados_izq and encoder_right_count < pulsos_deseados_der:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
     end_time = time.time()
