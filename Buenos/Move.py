@@ -144,3 +144,26 @@ if __name__ == '__main__':
         pwm_right.stop()
         GPIO.cleanup()
         rospy.loginfo("GPIO cleanup and node shutdown.")
+[DEBUG] [1716778783.923868]: Datos del obstáculo: center_x=1.5030718374066327
+[DEBUG] [1716778783.942848]: Datos del obstáculo: center_x=4.179134210707295
+[DEBUG] [1716778783.949737]: Datos del obstáculo: center_x=1.5031483839136763
+[DEBUG] [1716778783.974010]: Datos del obstáculo: center_x=4.179133779619797
+[DEBUG] [1716778783.982479]: Datos del obstáculo: center_x=1.50967677510168
+[DEBUG] [1716778783.991904]: Datos del obstáculo: center_x=4.179133352823481
+[DEBUG] [1716778784.003180]: Datos del obstáculo: center_x=1.5121972433446258
+[DEBUG] [1716778784.036987]: Datos del obstáculo: center_x=4.179132930275635
+[DEBUG] [1716778784.048221]: Datos del obstáculo: center_x=1.5141432094603018
+[DEBUG] [1716778784.057195]: Datos del obstáculo: center_x=4.179132511933976
+Traceback (most recent call last):
+  File "/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/estatico_prueba_2.py", line 139, in <module>
+    move_straight_distance(100, 98, 86)  # Mover hacia adelante por 1 metro a una velocidad más lenta
+  File "/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/estatico_prueba_2.py", line 120, in move_straight_distance
+    rate.sleep(10)  # Mantener la frecuencia deseada
+TypeError: sleep() takes 1 positional argument but 2 were given
+[DEBUG] [1716778784.079431]: Datos del obstáculo: center_x=1.515606078783702
+[DEBUG] [1716778784.087877]: Datos del obstáculo: center_x=4.17913209775664
+[DEBUG] [1716778784.094278]: Datos del obstáculo: center_x=1.5166900962170307
+[DEBUG] [1716778784.101920]: Datos del obstáculo: center_x=4.17913168770218
+[DEBUG] [1716778784.116227]: Datos del obstáculo: center_x=1.5174871499206775
+[DEBUG] [1716778784.127043]: Datos del obstáculo: center_x=4.1791312817295605
+ubuntu@ubuntu:~$ 
