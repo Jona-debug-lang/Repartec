@@ -66,17 +66,17 @@ def pose_callback(data):
 rospy.Subscriber('simple_pose', Pose2D, pose_callback)
 
 # Función para ajustar el movimiento basado en la desviación del Lidar
-def adjust_movement(deviation):
-    if deviation > 0.01:  # Desviación positiva mayor a 1 cm
-        pwm_left.ChangeDutyCycle(70)  # Ajustar duty cycle para corrección
-        pwm_right.ChangeDutyCycle(100)
-    elif deviation < -0.01:  # Desviación negativa mayor a 1 cm
-        pwm_left.ChangeDutyCycle(100)
-        pwm_right.ChangeDutyCycle(75)
+def adjust_movement(deviation):                      
+    if deviation > 0.1:  # Desviación positiva mayor a 1 cm
+        pwm_left.ChangeDutyCycle(80)  # Ajustar duty cycle para corrección
+        pwm_right.ChangeDutyCycle(95)
+    elif deviation < -0.1:  # Desviación negativa mayor a 1 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(80)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 1 cm
-        pwm_left.ChangeDutyCycle(100)
-        pwm_right.ChangeDutyCycle(100)
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
     rospy.loginfo(f"Adjusting due to Y deviation: {deviation:.3f}")
 
 # Función para mover los motores en línea recta con corrección de ruta
@@ -87,8 +87,8 @@ def move_straight_with_correction(distancia_cm):
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(85)
-    pwm_right.ChangeDutyCycle(100)
+    pwm_left.ChangeDutyCycle(96)
+    pwm_right.ChangeDutyCycle(95)
     
     encoder_left_count = 0
     encoder_right_count = 0
