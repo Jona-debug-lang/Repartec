@@ -54,11 +54,10 @@ k_der = 29.57
 # Variables para control de detención
 should_stop = False
 MAX_SPEED = 0.25  # Velocidad máxima para detenerse
-DETECTION_RADIUS = 2  # Radio de detección para detenerse
+DETECTION_RADIUS = 2.5  # Radio de detección para detenerse
 
 # Publicador para los datos de obstáculos
 obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
-
 
 # Clase para detección de ArUco
 class ArucoDetector:
@@ -208,7 +207,7 @@ def move_straight_2m_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -1.75:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
         adjust_movement_forward(deviation_y)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
@@ -259,7 +258,7 @@ def move_straight_2m_backward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
     
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x < -0.25:
+    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
         adjust_movement_backward(deviation_y)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
