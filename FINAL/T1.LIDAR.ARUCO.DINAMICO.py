@@ -59,8 +59,6 @@ DETECTION_RADIUS = 2  # Radio de detección para detenerse
 # Publicador para los datos de obstáculos
 obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
 
-# Publicador para el mensaje "finish_move"
-boton = rospy.Publisher('boton', String, queue_size=10)
 
 # Clase para detección de ArUco
 class ArucoDetector:
@@ -296,7 +294,6 @@ def move_straight_2m_backward():
 def handle_T1():
     move_straight_2m_forward()
     done_pub.publish("Forward Done")
-    boton.publish("GRACIAS")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
     rospy.loginfo("Esperando mensaje continue_move...")
     rospy.wait_for_message('continue_move', String)
