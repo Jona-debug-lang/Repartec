@@ -185,8 +185,8 @@ def move_straight_70cm_forward():
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(97)
-    pwm_right.ChangeDutyCycle(87)
+    pwm_left.ChangeDutyCycle(99)
+    pwm_right.ChangeDutyCycle(76)
     
     encoder_left_count = 0
     encoder_right_count = 0
@@ -197,7 +197,7 @@ def move_straight_70cm_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 70 cm hacia adelante")
     
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -0.65:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -0.50:
         adjust_movement_forward(deviation_y)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
@@ -213,7 +213,7 @@ def move_straight_70cm_forward():
                     time.sleep(5)
                 else:
                     break
-            pwm_left.ChangeDutyCycle(97)
+            pwm_left.ChangeDutyCycle(99)
             pwm_right.ChangeDutyCycle(87)
             rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
@@ -237,8 +237,8 @@ def turn_90_degrees(time_T):
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
     
-    pwm_left.ChangeDutyCycle(95)
-    pwm_right.ChangeDutyCycle(10)
+    pwm_left.ChangeDutyCycle(100)
+    pwm_right.ChangeDutyCycle(25)
     
     time.sleep(time_T)  # Ajusta este tiempo según la calibración necesaria
     
@@ -250,7 +250,7 @@ def handle_T2():
     move_straight_70cm_forward()
     done_pub.publish("Forward Done")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
-    turn_90_degrees(4)
+    turn_90_degrees(8.5)
     done_pub.publish("Turn Done")
     rospy.loginfo("Mensaje 'Turn Done' publicado")
 
