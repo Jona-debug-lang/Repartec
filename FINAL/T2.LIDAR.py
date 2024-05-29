@@ -179,7 +179,7 @@ def adjust_movement_forward_y(deviation):
         pwm_right.ChangeDutyCycle(87)
     rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
 
-# Función para ajustar el movimiento basado en la desviación del Lidar en el eje X
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia adelante en eje X
 def adjust_movement_forward_x(deviation):
     if deviation > 0.08:  # Desviación positiva mayor a 8 cm
         pwm_left.ChangeDutyCycle(97)
@@ -192,14 +192,49 @@ def adjust_movement_forward_x(deviation):
         pwm_right.ChangeDutyCycle(87)
     rospy.loginfo(f"Adjusting due to X deviation (forward): {deviation:.3f}")
 
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia atrás en eje Y
+def adjust_movement_backward_y(deviation):
+    if deviation > 0.08:  # Desviación positiva mayor a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(80)
+    else:
+        # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    rospy.loginfo(f"Adjusting due to Y deviation (backward): {deviation:.3f}")
+
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia atrás en eje X
+def adjust_movement_backward_x(deviation):
+    if deviation > 0.08:  # Desviación positiva mayor a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(80)
+    else:
+        # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
+        pwm_left.ChangeDutyCycle(96)
+        pwm_right.ChangeDutyCycle(95)
+    rospy.loginfo(f"Adjusting due to X deviation (backward): {deviation:.3f}")
+
 # Función para mover los motores en línea recta con corrección
-def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion):
+def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion, direccion="forward"):
     global encoder_left_count, encoder_right_count, should_stop, initial_x, initial_y
     
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    if direccion == "forward":
+        GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+        GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+        GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+        GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    else:
+        GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
+        GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
+        GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
+        GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
+
     pwm_left.ChangeDutyCycle(pwm_left_speed)
     pwm_right.ChangeDutyCycle(pwm_right_speed)
     
@@ -211,19 +246,33 @@ def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion)
     
     if eje_correccion == 'y':
         initial_x = current_x
-        objetivo = initial_x - (distancia_cm / 100.0)
+        objetivo = initial_x - (distancia_cm / 100.0)  # Distancia negativa para avanzar
     elif eje_correccion == 'x':
         initial_y = deviation_y
-        objetivo = initial_y + (distancia_cm / 100.0)
+        objetivo = initial_y + (distancia_cm / 100.0)  # Distancia positiva para avanzar
     
     rospy.loginfo(f"Inicio del movimiento recto de {distancia_cm} cm")
     
     while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
-        if eje_correccion == 'y' and current_x > objetivo:
-            adjust_movement_forward_y(deviation_y)
-        elif eje_correccion == 'x' and abs(deviation_y) < abs(objetivo):
-            adjust_movement_forward_x(current_x)
-        if encoder_left_count >= pulsos_deseados_izq or encoder_right_count >= pulsos_deseados_der or current_x <= objetivo:
+        if eje_correccion == 'y':
+            if direccion == "forward":
+                adjust_movement_forward_y(deviation_y)
+                if current_x <= objetivo:
+                    break
+            else:
+                adjust_movement_backward_y(deviation_y)
+                if current_x >= objetivo:
+                    break
+        elif eje_correccion == 'x':
+            if direccion == "forward":
+                adjust_movement_forward_x(current_x)
+                if abs(deviation_y) >= abs(objetivo):
+                    break
+            else:
+                adjust_movement_backward_x(current_x)
+                if abs(deviation_y) >= abs(objetivo):
+                    break
+        if encoder_left_count >= pulsos_deseados_izq or encoder_right_count >= pulsos_deseados_der:
             break
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
@@ -250,8 +299,8 @@ def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion)
 
 # Función para girar 90 grados
 def turn_90_degrees(time_ms, pwm_left_speed, pwm_right_speed):
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
     pwm_left.ChangeDutyCycle(pwm_left_speed)
@@ -278,40 +327,42 @@ def turn_in_place_90_degrees(time_ms, pwm_speed):
 
 # Función para manejar el comando T1
 def handle_T1():
-    move_straight(200, 97, 87, 'y')  # Corrección en eje Y
+    move_straight(200, 97, 87, 'y', "forward")  # Corrección en eje Y hacia adelante
     done_pub.publish("Forward Done")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
     rospy.loginfo("Esperando mensaje continue_move...")
     rospy.wait_for_message('continue_move', String)
-    move_straight(200, 96, 95, 'y')  # Corrección en eje Y
+    move_straight(200, 96, 95, 'y', "backward")  # Corrección en eje Y hacia atrás
     done_pub.publish("Backward Done")
     rospy.loginfo("Mensaje 'Backward Done' publicado")
 
 # Función para manejar el comando T2
 def handle_T2():
-    move_straight(70, 85, 100, 'y')
-    turn_90_degrees(5000, 100, 0)
-    move_straight(40, 85, 100, 'x')
-    turn_90_degrees(6750, 100, 0)
-    move_straight(45, 85, 100, 'y')
+    move_straight(70, 85, 100, 'y', "forward")  # Corrección en eje Y
+    turn_90_degrees(5000, 100, 10)
+    move_straight(40, 85, 100, 'x', "forward")  # Corrección en eje X
+    turn_90_degrees(6750, 100, 10)
+    move_straight(45, 85, 100, 'y', "forward")  # Corrección en eje Y
     done_pub.publish("T2 Part 1 Done")
     rospy.loginfo("Mensaje 'T2 Part 1 Done' publicado")
     rospy.loginfo("Esperando mensaje continue_move...")
     rospy.wait_for_message('continue_move', String)
-    move_straight(60, 70, 80, 'y')
+    move_straight(60, 70, 80, 'y', "forward")  # Corrección en eje Y
     turn_in_place_90_degrees(800, 50)
-    move_straight(200, 55, 75, 'x')
+    move_straight(200, 55, 75, 'x', "forward")  # Corrección en eje X
     turn_in_place_90_degrees(800, 50)
-    move_straight(60, 70, 80, 'y')
+    move_straight(60, 70, 80, 'y', "forward")  # Corrección en eje Y
     done_pub.publish("T2 Done")
     rospy.loginfo("Mensaje 'T2 Done' publicado")
 
 def reset_state():
-    global encoder_left_count, encoder_right_count, deviation_y, current_x
+    global encoder_left_count, encoder_right_count, deviation_y, current_x, initial_x, initial_y
     encoder_left_count = 0
     encoder_right_count = 0
     deviation_y = 0
     current_x = 0
+    initial_x = 0
+    initial_y = 0
 
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
