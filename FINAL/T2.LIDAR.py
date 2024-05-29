@@ -159,7 +159,7 @@ def check_obstacles():
             if (circle.center.y > 0.20 or
                 circle.center.y < -0.20 or
                 circle.center.x > 0.32):
-                should_stop = False
+                should_stop = True
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
 
@@ -246,6 +246,73 @@ def turn_90_degrees(time_T):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Curva de 90 grados completada")
 
+# Función para ajustar el movimiento basado en la desviación del Lidar hacia adelante
+def adjust_movement_forward_30cm(deviation):
+    if deviation > 0.08:  # Desviación positiva mayor a 8 cm
+        pwm_left.ChangeDutyCycle(97)  # Ajustar duty cycle para corrección
+        pwm_right.ChangeDutyCycle(87)
+    elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
+        pwm_left.ChangeDutyCycle(97)
+        pwm_right.ChangeDutyCycle(65)                     
+    else:
+        # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
+        pwm_left.ChangeDutyCycle(97)
+        pwm_right.ChangeDutyCycle(87)
+    rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
+
+# Función para mover los motores en línea recta 30 cm hacia adelante con corrección
+def move_straight_30cm_forward():
+    global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop, deviation_y
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(97)
+    pwm_right.ChangeDutyCycle(87)
+    
+    encoder_left_count = 0
+    encoder_right_count = 0
+    start_time = time.time()
+    
+    pulsos_deseados_izq = 30 * k_izq  # 30 cm * k_izq
+    pulsos_deseados_der = 30 * k_der  # 30 cm * k_der
+    
+    initial_deviation = deviation_y
+    
+    rospy.loginfo("Inicio del movimiento recto de 30 cm hacia adelante")
+    
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and initial_deviation < -0.30:
+        adjust_movement_forward_30cm(initial_deviation)
+        check_obstacles()  # Verificar obstáculos en cada iteración
+        if should_stop:
+            pwm_left.ChangeDutyCycle(0)
+            pwm_right.ChangeDutyCycle(0)
+            rospy.loginfo("Motores detenidos temporalmente")
+            time.sleep(5)  # Pausa por 5 segundos
+            rospy.loginfo("Revisando nuevamente después de la pausa")
+            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
+                check_obstacles()
+                if should_stop:
+                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                    time.sleep(5)
+                else:
+                    break
+            pwm_left.ChangeDutyCycle(97)
+            pwm_right.ChangeDutyCycle(87)
+            rospy.loginfo("Movimiento reanudado")
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+    
+    end_time = time.time()
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Motores detenidos")
+    
+    # Publicar los resultados finales
+    rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
+    rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
+
 def handle_T2():
     move_straight_70cm_forward()
     done_pub.publish("Forward Done")
@@ -253,6 +320,12 @@ def handle_T2():
     turn_90_degrees(8.5)
     done_pub.publish("Turn Done")
     rospy.loginfo("Mensaje 'Turn Done' publicado")
+    move_straight_30cm_forward()
+    done_pub.publish("Forward 30cm Done")
+    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    turn_90_degrees(8.5)
+    done_pub.publish("Final Turn Done")
+    rospy.loginfo("Mensaje 'Final Turn Done' publicado")
 
 def reset_state():
     global encoder_left_count, encoder_right_count, deviation_y, current_x
