@@ -69,9 +69,10 @@ def check_obstacles():
     for circle in obstacles_msg.circles:
         rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y}), velocidad=({circle.velocity.x}, {circle.velocity.y}), radio={circle.radius}")
         distance = (circle.center.x ** 2 + circle.center.y ** 2) ** 0.5
-        if 0.1 <= distance <= 2.0:  # Detenerse si el obstáculo está entre 10 cm y 2 metros
+        speed = (circle.velocity.x ** 2 + circle.velocity.y ** 2) ** 0.5
+        if 0.1 <= distance <= 2.0 and speed > 0:  # Detenerse si el obstáculo está entre 10 cm y 2 metros y se está moviendo
             should_stop = True
-            rospy.loginfo(f"Detenerse: Objeto detectado a distancia {distance:.2f} metros")
+            rospy.loginfo(f"Detenerse: Objeto en movimiento detectado a distancia {distance:.2f} metros con velocidad {speed:.2f} m/s")
             return
 
 # Función para mover los motores en línea recta
@@ -105,7 +106,7 @@ def move_straight_2m(pwm_left_speed, pwm_right_speed):
             for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
                 check_obstacles()
                 if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                    rospy.loginfo("El obstáculo en movimiento aún está presente. Pausando nuevamente.")
                     time.sleep(5)
                 else:
                     break
