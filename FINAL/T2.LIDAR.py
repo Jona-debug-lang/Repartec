@@ -46,6 +46,8 @@ encoder_right_count = 0
 # Variables para la corrección de ruta y detección de distancia
 deviation_y = 0
 current_x = 0
+initial_x = 0
+initial_y = 0
 
 # Constantes k basadas en tus datos (pulsos por centímetro)
 k_izq = 29.23
@@ -192,7 +194,7 @@ def adjust_movement_forward_x(deviation):
 
 # Función para mover los motores en línea recta con corrección
 def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion):
-    global encoder_left_count, encoder_right_count, should_stop
+    global encoder_left_count, encoder_right_count, should_stop, initial_x, initial_y
     
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
@@ -207,13 +209,22 @@ def move_straight(distancia_cm, pwm_left_speed, pwm_right_speed, eje_correccion)
     pulsos_deseados_izq = distancia_cm * k_izq
     pulsos_deseados_der = distancia_cm * k_der
     
+    if eje_correccion == 'y':
+        initial_x = current_x
+        objetivo = initial_x - (distancia_cm / 100.0)
+    elif eje_correccion == 'x':
+        initial_y = deviation_y
+        objetivo = initial_y + (distancia_cm / 100.0)
+    
     rospy.loginfo(f"Inicio del movimiento recto de {distancia_cm} cm")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
-        if eje_correccion == 'y':
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
+        if eje_correccion == 'y' and current_x > objetivo:
             adjust_movement_forward_y(deviation_y)
-        elif eje_correccion == 'x':
+        elif eje_correccion == 'x' and abs(deviation_y) < abs(objetivo):
             adjust_movement_forward_x(current_x)
+        if encoder_left_count >= pulsos_deseados_izq or encoder_right_count >= pulsos_deseados_der or current_x <= objetivo:
+            break
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
             pwm_left.ChangeDutyCycle(0)
@@ -279,9 +290,9 @@ def handle_T1():
 # Función para manejar el comando T2
 def handle_T2():
     move_straight(70, 85, 100, 'y')
-    turn_90_degrees(5000, 100, 10)
+    turn_90_degrees(5000, 100, 0)
     move_straight(40, 85, 100, 'x')
-    turn_90_degrees(6750, 100, 10)
+    turn_90_degrees(6750, 100, 0)
     move_straight(45, 85, 100, 'y')
     done_pub.publish("T2 Part 1 Done")
     rospy.loginfo("Mensaje 'T2 Part 1 Done' publicado")
