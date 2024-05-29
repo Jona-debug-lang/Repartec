@@ -159,7 +159,7 @@ def check_obstacles():
             if (circle.center.y > 0.20 or
                 circle.center.y < -0.20 or
                 circle.center.x > 0.32):
-                should_stop = True
+                should_stop = False
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
 
@@ -170,130 +170,14 @@ def adjust_movement_forward(deviation):
         pwm_right.ChangeDutyCycle(87)
     elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
         pwm_left.ChangeDutyCycle(97)
-        pwm_right.ChangeDutyCycle(65)
+        pwm_right.ChangeDutyCycle(65)                     
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(97)
         pwm_right.ChangeDutyCycle(87)
     rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
 
-# Función para ajustar el movimiento basado en la desviación del Lidar hacia atrás
-def adjust_movement_backward(deviation):
-    if deviation > 0.08:  # Desviación positiva mayor a 8 cm
-        pwm_left.ChangeDutyCycle(96)
-        pwm_right.ChangeDutyCycle(95)
-    elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
-        pwm_left.ChangeDutyCycle(96)
-        pwm_right.ChangeDutyCycle(80)
-    else:
-        # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
-        pwm_left.ChangeDutyCycle(96)
-        pwm_right.ChangeDutyCycle(95)
-    rospy.loginfo(f"Adjusting due to Y deviation (backward): {deviation:.3f}")
-
 # Función para mover los motores en línea recta hacia adelante con corrección
-def move_straight_2m_forward():
-    global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop
-    
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(97)
-    pwm_right.ChangeDutyCycle(87)
-    
-    encoder_left_count = 0
-    encoder_right_count = 0
-    start_time = time.time()
-    
-    pulsos_deseados_izq = 200 * k_izq  # 2 metros * k_izq
-    pulsos_deseados_der = 200 * k_der  # 2 metros * k_der
-    
-    rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
-    
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -1.75:
-        adjust_movement_forward(deviation_y)
-        check_obstacles()  # Verificar obstáculos en cada iteración
-        if should_stop:
-            pwm_left.ChangeDutyCycle(0)
-            pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Motores detenidos temporalmente")
-            time.sleep(5)  # Pausa por 5 segundos
-            rospy.loginfo("Revisando nuevamente después de la pausa")
-            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
-                check_obstacles()
-                if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
-                    time.sleep(5)
-                else:
-                    break
-            pwm_left.ChangeDutyCycle(97)
-            pwm_right.ChangeDutyCycle(87)
-            rospy.loginfo("Movimiento reanudado")
-        time.sleep(0.01)  # Ajusta este valor según sea necesario
-    
-    end_time = time.time()
-    
-    pwm_left.ChangeDutyCycle(0)  # Detener los motores
-    pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo("Motores detenidos")
-    
-    # Publicar los resultados finales
-    rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
-    rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
-
-# Función para mover los motores en línea recta hacia atrás con corrección
-def move_straight_2m_backward():
-    global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop
-    
-    GPIO.output(MOTOR_IZQ_IN1, GPIO.LOW)
-    GPIO.output(MOTOR_IZQ_IN2, GPIO.HIGH)
-    GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
-    pwm_left.ChangeDutyCycle(96)
-    pwm_right.ChangeDutyCycle(95)
-    
-    encoder_left_count = 0
-    encoder_right_count = 0
-    start_time = time.time()
-    
-    pulsos_deseados_izq = 200 * k_izq  # 2 metros * k_izq
-    pulsos_deseados_der = 200 * k_der  # 2 metros * k_der
-    
-    rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
-    
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x < -0.25:
-        adjust_movement_backward(deviation_y)
-        check_obstacles()  # Verificar obstáculos en cada iteración
-        if should_stop:
-            pwm_left.ChangeDutyCycle(0)
-            pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Motores detenidos temporalmente")
-            time.sleep(5)  # Pausa por 5 segundos
-            rospy.loginfo("Revisando nuevamente después de la pausa")
-            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
-                check_obstacles()
-                if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
-                    time.sleep(5)
-                else:
-                    break
-            pwm_left.ChangeDutyCycle(96)
-            pwm_right.ChangeDutyCycle(95)
-            rospy.loginfo("Movimiento reanudado")
-        time.sleep(0.01)  # Ajusta este valor según sea necesario
-    
-    end_time = time.time()
-    
-    pwm_left.ChangeDutyCycle(0)  # Detener los motores
-    pwm_right.ChangeDutyCycle(0)
-    rospy.loginfo("Motores detenidos")
-    
-    # Publicar los resultados finales
-    rospy.loginfo(f"Backward counts: Left {encoder_left_count}, Right {encoder_right_count}")
-    rospy.loginfo(f"Backward time elapsed: {end_time - start_time:.2f} seconds")
-
-# Función para mover los motores en línea recta hacia adelante con corrección (70 cm)
 def move_straight_70cm_forward():
     global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop
     
@@ -344,22 +228,31 @@ def move_straight_70cm_forward():
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
 
-# Función para manejar el comando T1
-def handle_T1():
-    move_straight_2m_forward()
-    done_pub.publish("Forward Done")
-    rospy.loginfo("Mensaje 'Forward Done' publicado")
-    rospy.loginfo("Esperando mensaje continue_move...")
-    rospy.wait_for_message('continue_move', String)
-    move_straight_2m_backward()
-    done_pub.publish("Backward Done")
-    rospy.loginfo("Mensaje 'Backward Done' publicado")
+# Función para realizar una curva de 90 grados hacia la derecha
+def turn_90_degrees(time_T):
+    rospy.loginfo("Inicio de la curva de 90 grados")
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    
+    pwm_left.ChangeDutyCycle(95)
+    pwm_right.ChangeDutyCycle(10)
+    
+    time.sleep(time_T)  # Ajusta este tiempo según la calibración necesaria
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Curva de 90 grados completada")
 
-# Función para manejar el comando T2
 def handle_T2():
     move_straight_70cm_forward()
-    done_pub.publish("Forward 70cm Done")
-    rospy.loginfo("Mensaje 'Forward 70cm Done' publicado")
+    done_pub.publish("Forward Done")
+    rospy.loginfo("Mensaje 'Forward Done' publicado")
+    turn_90_degrees(4)
+    done_pub.publish("Turn Done")
+    rospy.loginfo("Mensaje 'Turn Done' publicado")
 
 def reset_state():
     global encoder_left_count, encoder_right_count, deviation_y, current_x
@@ -371,9 +264,7 @@ def reset_state():
 def command_callback(data):
     rospy.loginfo(f"Comando recibido: {data.data}")
     reset_state()
-    if data.data == "T1":
-        handle_T1()
-    elif data.data == "T2":
+    if data.data == "T2":
         handle_T2()
 
 # Publicador para el mensaje "finish_move"
