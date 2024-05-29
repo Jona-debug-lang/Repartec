@@ -61,7 +61,7 @@ obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
 
 # Clase para detección de ArUco
 class ArucoDetector:
-    def _init_(self):
+    def __init__(self):
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/image_raw", Image, self.callback)
         self.pose_pub = rospy.Publisher("/aruco_pose", PoseStamped, queue_size=10)
@@ -153,10 +153,14 @@ def check_obstacles():
     rospy.loginfo("Datos de obstáculos recibidos")
     for circle in obstacles_msg.circles:
         rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y}), velocidad=({circle.velocity.x}, {circle.velocity.y}), radio={circle.radius}")
-        if abs(circle.velocity.x) > MAX_SPEED or abs(circle.velocity.y) > MAX_SPEED:
-            if (circle.center.x * 2 + circle.center.y * 2) <= DETECTION_RADIUS ** 2:
+        speed = (circle.velocity.x ** 2 + circle.velocity.y ** 2) ** 0.5
+        if speed > MAX_SPEED:
+            # Verificar si el obstáculo está fuera de las áreas seguras del robot
+            if (circle.center.y > 0.20 or
+                circle.center.y < -0.20 or
+                circle.center.x > 0.32):
                 should_stop = True
-                rospy.loginfo(f"Detenerse: Objeto detectado a distancia {(circle.center.x * 2 + circle.center.y * 2) ** 0.5:.2f}")
+                rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
 
 # Función para ajustar el movimiento basado en la desviación del Lidar hacia adelante
@@ -207,7 +211,7 @@ def move_straight_2m_forward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia adelante")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x > -1.75:
         adjust_movement_forward(deviation_y)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
@@ -258,7 +262,7 @@ def move_straight_2m_backward():
     
     rospy.loginfo("Inicio del movimiento recto de 2 metros hacia atrás")
     
-    while encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and current_x < -0.25:
         adjust_movement_backward(deviation_y)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
