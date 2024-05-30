@@ -246,6 +246,25 @@ def turn_90_degrees(time_T):
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo("Curva de 90 grados completada")
 
+# Función para realizar una curva de 90 grados hacia la derecha
+def turn_90_degrees_eje(time_T):
+    rospy.loginfo("Inicio de la curva de 90 grados")
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    
+    pwm_left.ChangeDutyCycle(50)
+    pwm_right.ChangeDutyCycle(50)
+    
+    time.sleep(time_T)  # Ajusta este tiempo según la calibración necesaria
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Curva de 90 grados completada")
+
+
 # Función para ajustar el movimiento basado en la desviación del Lidar hacia adelante
 def adjust_movement_forward_30cm(deviation):
     if deviation > 0.08:  # Desviación positiva mayor a 8 cm
@@ -364,6 +383,58 @@ def move_straight_20cm_forward():
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
 
+# Función para mover los motores en línea recta hacia adelante con corrección
+def move_straight_200cm_forward():
+    global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(77)
+    pwm_right.ChangeDutyCycle(67)
+    
+    encoder_left_count = 0
+    encoder_right_count = 0
+    start_time = time.time()
+    
+    pulsos_deseados_izq = 200 * k_izq  # 70 cm * k_izq
+    pulsos_deseados_der = 200 * k_der  # 70 cm * k_der
+    
+    rospy.loginfo("Inicio del movimiento recto de 70 cm hacia adelante")
+    
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
+        adjust_movement_forward(deviation_y)
+        check_obstacles()  # Verificar obstáculos en cada iteración
+        if should_stop:
+            pwm_left.ChangeDutyCycle(0)
+            pwm_right.ChangeDutyCycle(0)
+            rospy.loginfo("Motores detenidos temporalmente")
+            time.sleep(5)  # Pausa por 5 segundos
+            rospy.loginfo("Revisando nuevamente después de la pausa")
+            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
+                check_obstacles()
+                if should_stop:
+                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                    time.sleep(5)
+                else:
+                    break
+            pwm_left.ChangeDutyCycle(99)
+            pwm_right.ChangeDutyCycle(87)
+            rospy.loginfo("Movimiento reanudado")
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+    
+    end_time = time.time()
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Motores detenidos")
+    
+    # Publicar los resultados finales
+    rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
+    rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
+
+
 
 def handle_T2():
     move_straight_70cm_forward()
@@ -381,6 +452,22 @@ def handle_T2():
     move_straight_20cm_forward()
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    move_straight_20cm_forward
+    done_pub.publish("Forward 30cm Done")
+    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    turn_90_degrees_eje(3)
+    done_pub.publish("Final Turn Done")
+    rospy.loginfo("Mensaje 'Final Turn Done' publicado")
+    move_straight_200cm_forward
+    done_pub.publish("Forward 30cm Done")
+    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    turn_90_degrees_eje(3)
+    done_pub.publish("Final Turn Done")
+    rospy.loginfo("Mensaje 'Final Turn Done' publicado")
+    move_straight_20cm_forward
+    done_pub.publish("Forward 30cm Done")
+    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+
 
 def reset_state():
     global encoder_left_count, encoder_right_count, deviation_y, current_x
