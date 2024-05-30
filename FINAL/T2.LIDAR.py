@@ -159,7 +159,7 @@ def check_obstacles():
             if (circle.center.y > 0.20 or
                 circle.center.y < -0.20 or
                 circle.center.x > 0.32):
-                should_stop = True
+                should_stop = False
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
 
@@ -185,8 +185,8 @@ def move_straight_70cm_forward():
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(99)
-    pwm_right.ChangeDutyCycle(76)
+    pwm_left.ChangeDutyCycle(97)
+    pwm_right.ChangeDutyCycle(87)
     
     encoder_left_count = 0
     encoder_right_count = 0
@@ -213,7 +213,7 @@ def move_straight_70cm_forward():
                     time.sleep(5)
                 else:
                     break
-            pwm_left.ChangeDutyCycle(99)
+            pwm_left.ChangeDutyCycle(96)
             pwm_right.ChangeDutyCycle(87)
             rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
@@ -275,14 +275,14 @@ def move_straight_30cm_forward():
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 30 * k_izq  # 30 cm * k_izq
-    pulsos_deseados_der = 30 * k_der  # 30 cm * k_der
+    pulsos_deseados_izq = 35 * k_izq  # 30 cm * k_izq
+    pulsos_deseados_der = 35 * k_der  # 30 cm * k_der
     
     initial_deviation = deviation_y
     
     rospy.loginfo("Inicio del movimiento recto de 30 cm hacia adelante")
     
-    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and initial_deviation < -0.30:
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der) and initial_deviation < 35:
         adjust_movement_forward_30cm(initial_deviation)
         check_obstacles()  # Verificar obstáculos en cada iteración
         if should_stop:
@@ -313,19 +313,74 @@ def move_straight_30cm_forward():
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
 
+# Función para mover los motores en línea recta hacia adelante con corrección
+def move_straight_20cm_forward():
+    global start_time, end_time, encoder_left_count, encoder_right_count, current_x, should_stop
+    
+    GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
+    GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
+    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    pwm_left.ChangeDutyCycle(97)
+    pwm_right.ChangeDutyCycle(87)
+    
+    encoder_left_count = 0
+    encoder_right_count = 0
+    start_time = time.time()
+    
+    pulsos_deseados_izq = 50 * k_izq  # 70 cm * k_izq
+    pulsos_deseados_der = 50 * k_der  # 70 cm * k_der
+    
+    rospy.loginfo("Inicio del movimiento recto de 70 cm hacia adelante")
+    
+    while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
+        adjust_movement_forward(deviation_y)
+        check_obstacles()  # Verificar obstáculos en cada iteración
+        if should_stop:
+            pwm_left.ChangeDutyCycle(0)
+            pwm_right.ChangeDutyCycle(0)
+            rospy.loginfo("Motores detenidos temporalmente")
+            time.sleep(5)  # Pausa por 5 segundos
+            rospy.loginfo("Revisando nuevamente después de la pausa")
+            for _ in range(20):  # Revisar durante 2 segundos (20 ciclos de 0.1 segundos)
+                check_obstacles()
+                if should_stop:
+                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                    time.sleep(5)
+                else:
+                    break
+            pwm_left.ChangeDutyCycle(99)
+            pwm_right.ChangeDutyCycle(87)
+            rospy.loginfo("Movimiento reanudado")
+        time.sleep(0.01)  # Ajusta este valor según sea necesario
+    
+    end_time = time.time()
+    
+    pwm_left.ChangeDutyCycle(0)  # Detener los motores
+    pwm_right.ChangeDutyCycle(0)
+    rospy.loginfo("Motores detenidos")
+    
+    # Publicar los resultados finales
+    rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
+    rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
+
+
 def handle_T2():
     move_straight_70cm_forward()
     done_pub.publish("Forward Done")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
-    turn_90_degrees(8.5)
+    turn_90_degrees(7.2)
     done_pub.publish("Turn Done")
     rospy.loginfo("Mensaje 'Turn Done' publicado")
     move_straight_30cm_forward()
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-    turn_90_degrees(8.5)
+    turn_90_degrees(8)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
+    move_straight_20cm_forward()
+    done_pub.publish("Forward 30cm Done")
+    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
 
 def reset_state():
     global encoder_left_count, encoder_right_count, deviation_y, current_x
