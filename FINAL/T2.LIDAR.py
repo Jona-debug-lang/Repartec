@@ -253,7 +253,7 @@ def turn_90_degrees_eje(time_T):
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
-    GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
+    GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
     
     pwm_left.ChangeDutyCycle(50)
     pwm_right.ChangeDutyCycle(50)
@@ -347,8 +347,8 @@ def move_straight_20cm_forward():
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 50 * k_izq  # 20 cm * k_izq
-    pulsos_deseados_der = 50 * k_der  # 20 cm * k_der
+    pulsos_deseados_izq = 60 * k_izq  # 20 cm * k_izq
+    pulsos_deseados_der = 60 * k_der  # 20 cm * k_der
     
     rospy.loginfo("Inicio del movimiento recto de 20 cm hacia adelante")
     
