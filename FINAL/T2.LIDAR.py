@@ -255,8 +255,8 @@ def turn_90_degrees_eje(time_T):
     GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
     
-    pwm_left.ChangeDutyCycle(40)
-    pwm_right.ChangeDutyCycle(40)
+    pwm_left.ChangeDutyCycle(100)
+    pwm_right.ChangeDutyCycle(100)
     
     time.sleep(time_T)  # Ajusta este tiempo según la calibración necesaria
     
