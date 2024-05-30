@@ -161,7 +161,8 @@ def check_obstacles():
             # Verificar si el obstáculo está fuera de las áreas seguras del robot
             if (circle.center.y > 0.20 or
                 circle.center.y < -0.20 or
-                circle.center.x > 0.32):
+                circle.center.x > 0.32 or
+                circle.radius > 0.12):
                 should_stop = False
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
