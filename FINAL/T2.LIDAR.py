@@ -255,8 +255,8 @@ def turn_90_degrees_eje(time_T):
     GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
     
-    pwm_left.ChangeDutyCycle(50)
-    pwm_right.ChangeDutyCycle(50)
+    pwm_left.ChangeDutyCycle(40)
+    pwm_right.ChangeDutyCycle(40)
     
     time.sleep(time_T)  # Ajusta este tiempo según la calibración necesaria
     
@@ -391,15 +391,15 @@ def move_straight_200cm_forward():
     GPIO.output(MOTOR_IZQ_IN2, GPIO.LOW)
     GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
     GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    pwm_left.ChangeDutyCycle(77)
-    pwm_right.ChangeDutyCycle(67)
+    pwm_left.ChangeDutyCycle(65)
+    pwm_right.ChangeDutyCycle(30)
     
     encoder_left_count = 0
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 200 * k_izq  # 200 cm * k_izq
-    pulsos_deseados_der = 200 * k_der  # 200 cm * k_der
+    pulsos_deseados_izq = 220 * k_izq  # 200 cm * k_izq
+    pulsos_deseados_der = 220 * k_der  # 200 cm * k_der
     
     rospy.loginfo("Inicio del movimiento recto de 200 cm hacia adelante")
     
@@ -455,13 +455,13 @@ def handle_T21():
     move_straight_20cm_forward()
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
-    turn_90_degrees_eje(3)
+    turn_90_degrees_eje(1.2)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
     move_straight_200cm_forward()
     done_pub.publish("Forward 200cm Done")
     rospy.loginfo("Mensaje 'Forward 200cm Done' publicado")
-    turn_90_degrees_eje(3)
+    turn_90_degrees_eje(1.2)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
     move_straight_20cm_forward()
