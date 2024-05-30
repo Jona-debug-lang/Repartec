@@ -452,10 +452,8 @@ def handle_T2():
     move_straight_20cm_forward()
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-    
-    rospy.loginfo("Esperando mensaje continue_move...")
-    rospy.wait_for_message('continue_move', String)
 
+def handle_T21():
     move_straight_20cm_forward
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
@@ -485,12 +483,16 @@ def command_callback(data):
     reset_state()
     if data.data == "T2":
         handle_T2()
+    elif data.data == "continue":
+        handle_T21()
+
 
 # Publicador para el mensaje "finish_move"
 done_pub = rospy.Publisher('finish_move', String, queue_size=10)
 
 # Nodo para escuchar comandos
 rospy.Subscriber('first_move', String, command_callback)
+rospy.Subscriber('continue_move', String, command_callback)
 
 if __name__ == '__main__':
     try:
