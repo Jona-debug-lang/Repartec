@@ -452,6 +452,10 @@ def handle_T2():
     move_straight_20cm_forward()
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    
+    rospy.loginfo("Esperando mensaje continue_move...")
+    rospy.wait_for_message('continue_move', String)
+
     move_straight_20cm_forward
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
