@@ -170,7 +170,7 @@ def adjust_movement_forward(deviation):
         pwm_right.ChangeDutyCycle(87)
     elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
         pwm_left.ChangeDutyCycle(97)
-        pwm_right.ChangeDutyCycle(65)                     
+        pwm_right.ChangeDutyCycle(65)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(97)
@@ -272,7 +272,7 @@ def adjust_movement_forward_30cm(deviation):
         pwm_right.ChangeDutyCycle(87)
     elif deviation < -0.08:  # Desviación negativa mayor a 8 cm
         pwm_left.ChangeDutyCycle(97)
-        pwm_right.ChangeDutyCycle(65)                     
+        pwm_right.ChangeDutyCycle(65)
     else:
         # Restablecer los PWM a valores normales si la desviación es menor o igual a 8 cm
         pwm_left.ChangeDutyCycle(97)
@@ -347,10 +347,10 @@ def move_straight_20cm_forward():
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 50 * k_izq  # 70 cm * k_izq
-    pulsos_deseados_der = 50 * k_der  # 70 cm * k_der
+    pulsos_deseados_izq = 50 * k_izq  # 20 cm * k_izq
+    pulsos_deseados_der = 50 * k_der  # 20 cm * k_der
     
-    rospy.loginfo("Inicio del movimiento recto de 70 cm hacia adelante")
+    rospy.loginfo("Inicio del movimiento recto de 20 cm hacia adelante")
     
     while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
         adjust_movement_forward(deviation_y)
@@ -368,7 +368,7 @@ def move_straight_20cm_forward():
                     time.sleep(5)
                 else:
                     break
-            pwm_left.ChangeDutyCycle(99)
+            pwm_left.ChangeDutyCycle(97)
             pwm_right.ChangeDutyCycle(87)
             rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
@@ -398,10 +398,10 @@ def move_straight_200cm_forward():
     encoder_right_count = 0
     start_time = time.time()
     
-    pulsos_deseados_izq = 200 * k_izq  # 70 cm * k_izq
-    pulsos_deseados_der = 200 * k_der  # 70 cm * k_der
+    pulsos_deseados_izq = 200 * k_izq  # 200 cm * k_izq
+    pulsos_deseados_der = 200 * k_der  # 200 cm * k_der
     
-    rospy.loginfo("Inicio del movimiento recto de 70 cm hacia adelante")
+    rospy.loginfo("Inicio del movimiento recto de 200 cm hacia adelante")
     
     while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
         adjust_movement_forward(deviation_y)
@@ -419,8 +419,8 @@ def move_straight_200cm_forward():
                     time.sleep(5)
                 else:
                     break
-            pwm_left.ChangeDutyCycle(99)
-            pwm_right.ChangeDutyCycle(87)
+            pwm_left.ChangeDutyCycle(77)
+            pwm_right.ChangeDutyCycle(67)
             rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)  # Ajusta este valor según sea necesario
     
@@ -433,8 +433,6 @@ def move_straight_200cm_forward():
     # Publicar los resultados finales
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
     rospy.loginfo(f"Forward time elapsed: {end_time - start_time:.2f} seconds")
-
-
 
 def handle_T2():
     move_straight_70cm_forward()
@@ -450,26 +448,25 @@ def handle_T2():
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
     move_straight_20cm_forward()
-    done_pub.publish("Forward 30cm Done")
-    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    done_pub.publish("Forward 20cm Done")
+    rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
 
 def handle_T21():
-    move_straight_20cm_forward
-    done_pub.publish("Forward 30cm Done")
-    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    move_straight_20cm_forward()
+    done_pub.publish("Forward 20cm Done")
+    rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     turn_90_degrees_eje(3)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight_200cm_forward
-    done_pub.publish("Forward 30cm Done")
-    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
+    move_straight_200cm_forward()
+    done_pub.publish("Forward 200cm Done")
+    rospy.loginfo("Mensaje 'Forward 200cm Done' publicado")
     turn_90_degrees_eje(3)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight_20cm_forward
-    done_pub.publish("Forward 30cm Done")
-    rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-
+    move_straight_20cm_forward()
+    done_pub.publish("Forward 20cm Done")
+    rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
 
 def reset_state():
     global encoder_left_count, encoder_right_count, deviation_y, current_x
@@ -485,7 +482,6 @@ def command_callback(data):
         handle_T2()
     elif data.data == "continue":
         handle_T21()
-
 
 # Publicador para el mensaje "finish_move"
 done_pub = rospy.Publisher('finish_move', String, queue_size=10)
