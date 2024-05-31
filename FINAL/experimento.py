@@ -222,6 +222,7 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
         GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
         motor_left_duty = 85
         motor_right_duty = 85
+        time_T = 2.5
     else:
         GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
         GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
@@ -233,17 +234,22 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     
     while elapsed_time < time_T:
         start_time = time.time()
+        
         check_obstacles()
+        
         if should_stop:
             pwm_left.ChangeDutyCycle(0)
             pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Motores detenidos temporalmente")
+            rospy.loginfo("Motores detenidos temporalmente por un obstáculo")
+            
             while should_stop:
                 time.sleep(0.1)
                 check_obstacles()
+            
             rospy.loginfo("Movimiento reanudado")
             pwm_left.ChangeDutyCycle(motor_left_duty)
             pwm_right.ChangeDutyCycle(motor_right_duty)
+        
         else:
             time.sleep(0.01)
             elapsed_time += time.time() - start_time
@@ -251,7 +257,6 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo(f"Curva de {degree} grados completada")
-
 
 def handle_T2():
     move_straight(50)
