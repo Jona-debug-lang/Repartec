@@ -11,7 +11,7 @@ class ROSInterface:
         rospy.Subscriber('/boton', String, self.callback)
 
     def send_continue_move(self):
-        self.pub_continue_move.publish("continue_move")
+        self.pub_continue_move.publish("continue")
         rospy.loginfo("Published 'continue_move' to /continue_move")
         self.app.hide_gracias_button()
 

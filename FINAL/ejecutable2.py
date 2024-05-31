@@ -13,6 +13,7 @@ setup_command = "source ~/catkin_ws/devel/setup.bash"
 procesos_activos = {}
 procesos_reinicio = {}
 proceso_secuencial_activo = None
+secuencia_completa = False  # Flag para rastrear el estado de finalización de la secuencia
 
 # Lista de comandos personalizados para ejecutar en secuencia
 comandos_secuenciales = [
@@ -31,8 +32,8 @@ comandos_a_reiniciar = [
 
 # Diccionario de scripts personalizados
 scripts_personalizados = {
-    'a': '/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/Repartec/FINAL/experimento2.py',
-    'b': '/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/interfaz.py'
+    'a': '/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/Repartec/FINAL/experimento.py',
+    'b': '/home/ubuntu/catkin_ws/src/my_python_scripts/scripts/Repartec/FINAL/interfaz.py'
 }
 
 # Diccionario de rostopics personalizados
@@ -48,7 +49,7 @@ contador_activo = False
 def iniciar_contador():
     global contador_activo
     contador_activo = True
-    for i in range(5, 0, -1):
+    for i in range(10, 0, -1):
         print(f"Esperando {i} segundos")
         time.sleep(1)
     contador_activo = False
@@ -88,7 +89,8 @@ def ejecutar_rostopic_echo(nombre_ventana, topic):
             print(f"No se está escuchando rostopic echo {topic}")
 
 def ejecutar_comandos_secuenciales():
-    global proceso_secuencial_activo
+    global proceso_secuencial_activo, secuencia_completa
+    secuencia_completa = False
     for i, comando in enumerate(comandos_secuenciales):
         if proceso_secuencial_activo:
             print(f"Ejecutando {comando}...")
@@ -98,15 +100,18 @@ def ejecutar_comandos_secuenciales():
             procesos_activos[nombre_ventana] = proceso
             print(f"Proceso {comando} ejecutado")
             time.sleep(10)  # Espera 10 segundos antes de continuar con el siguiente comando
+            print(f"Proceso {comando} terminado")
             if not proceso_secuencial_activo:
                 break
     proceso_secuencial_activo = None
+    secuencia_completa = True
     print("Todos los comandos secuenciales han sido ejecutados")
 
 def detener_todos_los_procesos():
-    global contador_activo, proceso_secuencial_activo
+    global contador_activo, proceso_secuencial_activo, secuencia_completa
     if not contador_activo:
         proceso_secuencial_activo = None
+        secuencia_completa = False
         for nombre_ventana, proceso in procesos_activos.items():
             proceso.terminate()
             proceso.wait()
@@ -137,6 +142,7 @@ def iniciar_procesos_reinicio():
         nombre_ventana = f'reinicio_{i+1}'
         threading.Thread(target=ejecutar_comando_reinicio, args=(comando, nombre_ventana)).start()
         time.sleep(10)  # Espera 10 segundos antes de continuar con el siguiente comando
+        print(f"Proceso de reinicio {comando} terminado")
     rospy.loginfo("Todos los procesos de reinicio han sido iniciados")
     rospy.loginfo("Reinicio completado. Publicando 'GRACIAS'.")
     pub.publish("GRACIAS")
@@ -153,20 +159,34 @@ def ejecutar_comando_reinicio(comando, nombre_ventana):
         print(f"Proceso {comando} terminado con errores: {stderr.decode()}")
 
 def on_press(key):
-    global contador_activo, proceso_secuencial_activo
+    global contador_activo, proceso_secuencial_activo, secuencia_completa
     if not contador_activo:
         try:
             if key.char == '1':
                 detener_todos_los_procesos()
-            elif key.char == '2' and not proceso_secuencial_activo:
-                proceso_secuencial_activo = True
-                threading.Thread(target=ejecutar_comandos_secuenciales).start()
+            elif key.char == '2':
+                if proceso_secuencial_activo:
+                    print("La secuencia ya está en ejecución.")
+                elif secuencia_completa:
+                    print("Reiniciando la secuencia de comandos secuenciales...")
+                    detener_todos_los_procesos()
+                    proceso_secuencial_activo = True
+                    threading.Thread(target=ejecutar_comandos_secuenciales).start()
+                else:
+                    proceso_secuencial_activo = True
+                    threading.Thread(target=ejecutar_comandos_secuenciales).start()
             elif key.char in scripts_personalizados:
                 ejecutar_proceso(f'python3 {scripts_personalizados[key.char]}', f'script_{key.char}')
             elif key.char in rostopics_personalizados:
                 ejecutar_rostopic_echo(f'rostopic_{key.char}', rostopics_personalizados[key.char])
         except AttributeError:
             pass
+    else:
+        if key.char in scripts_personalizados:
+            # Reiniciar el script
+            nombre_ventana = f'script_{key.char}'
+            ejecutar_proceso(f'python3 {scripts_personalizados[key.char]}', nombre_ventana)
+            print(f"Reiniciando script {nombre_ventana}")
 
 def on_release(key):
     if key == keyboard.Key.esc:
