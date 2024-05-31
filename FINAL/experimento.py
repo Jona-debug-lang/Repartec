@@ -211,6 +211,7 @@ def move_straight(distance_cm, duty_cycle_high=97, duty_cycle_low=87):
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
 
 def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False):
+    global should_stop
     rospy.loginfo(f"Inicio de la curva de {degree} grados")
     
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
@@ -221,6 +222,7 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
         GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
         motor_left_duty = 85
         motor_right_duty = 85
+        time_T = 2.5
     else:
         GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
         GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
@@ -228,26 +230,49 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     pwm_left.ChangeDutyCycle(motor_left_duty)
     pwm_right.ChangeDutyCycle(motor_right_duty)
     
-    time.sleep(time_T)
+    start_time = time.time()
+    elapsed_time = 0
+    
+    while elapsed_time < time_T:
+        check_obstacles()
+        if should_stop:
+            pwm_left.ChangeDutyCycle(0)
+            pwm_right.ChangeDutyCycle(0)
+            rospy.loginfo("Motores detenidos temporalmente")
+            time.sleep(5)
+            rospy.loginfo("Revisando nuevamente después de la pausa")
+            for _ in range(20):
+                check_obstacles()
+                if should_stop:
+                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                    time.sleep(5)
+                else:
+                    break
+            pwm_left.ChangeDutyCycle(motor_left_duty)
+            pwm_right.ChangeDutyCycle(motor_right_duty)
+            rospy.loginfo("Movimiento reanudado")
+        time.sleep(0.01)
+        elapsed_time = time.time() - start_time
     
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo(f"Curva de {degree} grados completada")
 
+
 def handle_T2():
     move_straight(50)
     done_pub.publish("Forward Done")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
-    turn(90, 8.5)
+    turn(90, 8.6)
     done_pub.publish("Turn Done")
     rospy.loginfo("Mensaje 'Turn Done' publicado")
     move_straight(20)
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-    turn(90, 9)
+    turn(90, 8.5)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(30)
+    move_straight(40)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
