@@ -148,7 +148,7 @@ def check_obstacles():
         rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y}), velocidad=({circle.velocity.x}, {circle.velocity.y}), radio={circle.radius}")
         speed = (circle.velocity.x ** 2 + circle.velocity.y ** 2) ** 0.5
         if speed > MAX_SPEED:
-            if (circle.center.y > 0.20 or circle.center.y < -0.20 or circle.center.x > 0.32 or circle.radius > 0.15):
+            if (circle.center.y > 0.50 or circle.center.y < -0.50 or circle.center.x > 0.50 or circle.center.x < -0.50 or circle.radius > 0.15):
                 should_stop = True
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
@@ -243,10 +243,10 @@ def handle_T2():
     move_straight(25)
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-    turn(90, 9)
+    turn(90, 10)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(70)
+    move_straight(80)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
@@ -259,7 +259,7 @@ def handle_T21():
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
     move_straight(200, duty_cycle_high=77, duty_cycle_low=67)
     done_pub.publish("Forward 200cm Done")
-    rospy.loginfo("Mensaje 'Forward 200cm Done' publicado")
+    rospy.loginfo("Mensaje 'Forward 0200cm Done' publicado")
     turn(90, 2.5, reverse=True)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
