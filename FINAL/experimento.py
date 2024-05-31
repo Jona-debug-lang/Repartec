@@ -242,13 +242,20 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
             pwm_right.ChangeDutyCycle(0)
             rospy.loginfo("Motores detenidos temporalmente por un obstáculo")
             
-            while should_stop:
-                time.sleep(0.1)
+            time.sleep(3)  # Pausa de 3 segundos
+
+            for _ in range(20):  # Análisis durante 2 segundos (20 ciclos de 0.1 segundos)
                 check_obstacles()
+                if should_stop:
+                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente por 3 segundos.")
+                    time.sleep(3)
+                else:
+                    break
             
-            rospy.loginfo("Movimiento reanudado")
-            pwm_left.ChangeDutyCycle(motor_left_duty)
-            pwm_right.ChangeDutyCycle(motor_right_duty)
+            if not should_stop:
+                rospy.loginfo("Movimiento reanudado")
+                pwm_left.ChangeDutyCycle(motor_left_duty)
+                pwm_right.ChangeDutyCycle(motor_right_duty)
         
         else:
             time.sleep(0.01)
@@ -257,7 +264,6 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo(f"Curva de {degree} grados completada")
-
 def handle_T2():
     move_straight(50)
     done_pub.publish("Forward Done")
