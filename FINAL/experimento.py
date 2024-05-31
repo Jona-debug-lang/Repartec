@@ -221,7 +221,7 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     else:
         GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
         GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
-    z
+    
     pwm_left.ChangeDutyCycle(motor_left_duty)
     pwm_right.ChangeDutyCycle(motor_right_duty)
     
