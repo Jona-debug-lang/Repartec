@@ -56,8 +56,8 @@ k_der = 29.57
 
 # Variables para control de detención
 should_stop = False
-MAX_SPEED = 0.10  # Velocidad máxima para detenerse
-DETECTION_RADIUS = 1.5  # Radio de detección para detenerse
+MAX_SPEED = 0.25  # Velocidad máxima para detenerse
+DETECTION_RADIUS = 2.5  # Radio de detección para detenerse
 
 # Publicador para los datos de obstáculos
 obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
@@ -211,7 +211,7 @@ def move_straight(distance_cm, duty_cycle_high=97, duty_cycle_low=87, check_obst
     rospy.loginfo("Motores detenidos")
     rospy.loginfo(f"Forward counts: Left {encoder_left_count}, Right {encoder_right_count}")
 
-def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False):
+def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False, check_obstacle=True):
     global should_stop
     rospy.loginfo(f"Inicio de la curva de {degree} grados")
     
@@ -235,7 +235,8 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     while elapsed_time < time_T:
         start_time = time.time()
         
-        check_obstacles()
+        if check_obstacle:
+            check_obstacles()
         
         if should_stop:
             pwm_left.ChangeDutyCycle(0)
@@ -286,16 +287,16 @@ def handle_T21():
     move_straight(15, duty_cycle_high=77, duty_cycle_low=70, check_obstacle=False)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
-    turn(90, 2, reverse=True)
+    turn(90, 1.7, reverse=True, check_obstacle=False)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
     move_straight(225, duty_cycle_high=77, duty_cycle_low=67)
     done_pub.publish("Forward 200cm Done")
-    rospy.loginfo("Mensaje 'Forward 0200cm Done' publicado")
-    turn(90, 1.9, reverse=True)
+    rospy.loginfo("Mensaje 'Forward 200cm Done' publicado")
+    turn(90, 1.9, reverse=True, check_obstacle=False)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(20, duty_cycle_high=77, duty_cycle_low=70)
+    move_straight(20, duty_cycle_high=77, duty_cycle_low=70, check_obstacle=False)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
 
