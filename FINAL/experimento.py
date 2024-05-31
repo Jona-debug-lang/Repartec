@@ -146,8 +146,9 @@ def check_obstacles():
     rospy.loginfo("Datos de obstáculos recibidos")
     for circle in obstacles_msg.circles:
         rospy.loginfo(f"Obstáculo detectado: posición=({circle.center.x}, {circle.center.y}), velocidad=({circle.velocity.x}, {circle.velocity.y}), radio={circle.radius}")
-        speed = (circle.velocity.x ** 2 + circle.velocity.y ** 2) ** 0.5
-        if speed > MAX_SPEED:
+        speed_x = circle.velocity.x
+        speed_y = circle.velocity.y
+        if speed_x > MAX_SPEED or speed_y > MAX_SPEED:
             if (circle.center.y > 0.50 or circle.center.y < -0.50 or circle.center.x > 0.50 or circle.center.x < -0.50 or circle.radius > 0.15):
                 should_stop = True
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
