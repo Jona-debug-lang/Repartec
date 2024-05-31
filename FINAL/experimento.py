@@ -272,7 +272,7 @@ def handle_T2():
     turn(90, 8.5)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(40)
+    move_straight(35)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
