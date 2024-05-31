@@ -56,7 +56,7 @@ k_der = 29.57
 
 # Variables para control de detención
 should_stop = False
-MAX_SPEED = 0.25  # Velocidad máxima para detenerse
+MAX_SPEED = 0.10  # Velocidad máxima para detenerse
 DETECTION_RADIUS = 2.5  # Radio de detección para detenerse
 
 # Publicador para los datos de obstáculos
@@ -235,19 +235,19 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     rospy.loginfo(f"Curva de {degree} grados completada")
 
 def handle_T2():
-    move_straight(60)
+    move_straight(50)
     done_pub.publish("Forward Done")
     rospy.loginfo("Mensaje 'Forward Done' publicado")
     turn(90, 8.5)
     done_pub.publish("Turn Done")
     rospy.loginfo("Mensaje 'Turn Done' publicado")
-    move_straight(25)
+    move_straight(20)
     done_pub.publish("Forward 30cm Done")
     rospy.loginfo("Mensaje 'Forward 30cm Done' publicado")
-    turn(90, 10)
+    turn(90, 9)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(80)
+    move_straight(30)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
@@ -264,7 +264,7 @@ def handle_T21():
     turn(90, 2.5, reverse=True)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(20, duty_cycle_high=77, duty_cycle_low=70)
+    move_straight(25, duty_cycle_high=77, duty_cycle_low=70)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
 
