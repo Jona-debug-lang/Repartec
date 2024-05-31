@@ -57,7 +57,7 @@ k_der = 29.57
 # Variables para control de detención
 should_stop = False
 MAX_SPEED = 0.10  # Velocidad máxima para detenerse
-DETECTION_RADIUS = 2.5  # Radio de detección para detenerse
+DETECTION_RADIUS = 1.5  # Radio de detección para detenerse
 
 # Publicador para los datos de obstáculos
 obstacle_data_pub = rospy.Publisher('obstacle_data', String, queue_size=10)
@@ -154,15 +154,15 @@ def check_obstacles():
                 rospy.loginfo(f"Detenerse: Objeto en movimiento detectado en x: {circle.center.x}, y: {circle.center.y}")
                 return
 
-def adjust_movement(deviation, duty_cycle_high=97, duty_cycle_low=65):
+def adjust_movement(deviation):
     if deviation > 0.08:
-        pwm_left.ChangeDutyCycle(duty_cycle_high)
-        pwm_right.ChangeDutyCycle(87)
+        pwm_left.ChangeDutyCycle(97)
+        pwm_right.ChangeDutyCycle(70)
     elif deviation < -0.08:
-        pwm_left.ChangeDutyCycle(duty_cycle_high)
-        pwm_right.ChangeDutyCycle(duty_cycle_low)
+        pwm_left.ChangeDutyCycle(70)
+        pwm_right.ChangeDutyCycle(97)
     else:
-        pwm_left.ChangeDutyCycle(duty_cycle_high)
+        pwm_left.ChangeDutyCycle(97)
         pwm_right.ChangeDutyCycle(87)
     rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
 
@@ -220,9 +220,8 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     if reverse:
         GPIO.output(MOTOR_DER_IN3, GPIO.LOW)
         GPIO.output(MOTOR_DER_IN4, GPIO.HIGH)
-        motor_left_duty = 85
-        motor_right_duty = 85
-        time_T = 2.5
+        motor_left_duty = 84
+        motor_right_duty = 20
     else:
         GPIO.output(MOTOR_DER_IN3, GPIO.HIGH)
         GPIO.output(MOTOR_DER_IN4, GPIO.LOW)
@@ -282,19 +281,19 @@ def handle_T2():
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
 def handle_T21():
-    move_straight(20, duty_cycle_high=77, duty_cycle_low=70)
+    move_straight(15, duty_cycle_high=77, duty_cycle_low=70)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
-    turn(90, 2.5, reverse=True)
+    turn(90, 2, reverse=True)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(200, duty_cycle_high=77, duty_cycle_low=67)
+    move_straight(225, duty_cycle_high=77, duty_cycle_low=67)
     done_pub.publish("Forward 200cm Done")
     rospy.loginfo("Mensaje 'Forward 0200cm Done' publicado")
-    turn(90, 2.5, reverse=True)
+    turn(90, 1.9, reverse=True)
     done_pub.publish("Final Turn Done")
     rospy.loginfo("Mensaje 'Final Turn Done' publicado")
-    move_straight(25, duty_cycle_high=77, duty_cycle_low=70)
+    move_straight(20, duty_cycle_high=77, duty_cycle_low=70)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
 
