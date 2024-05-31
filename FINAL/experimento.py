@@ -166,7 +166,7 @@ def adjust_movement(deviation):
         pwm_right.ChangeDutyCycle(87)
     rospy.loginfo(f"Adjusting due to Y deviation (forward): {deviation:.3f}")
 
-def move_straight(distance_cm, duty_cycle_high=97, duty_cycle_low=87):
+def move_straight(distance_cm, duty_cycle_high=97, duty_cycle_low=87, check_obstacle=True):
     global encoder_left_count, encoder_right_count, current_x, should_stop
     
     GPIO.output(MOTOR_IZQ_IN1, GPIO.HIGH)
@@ -186,23 +186,24 @@ def move_straight(distance_cm, duty_cycle_high=97, duty_cycle_low=87):
     
     while (encoder_left_count < pulsos_deseados_izq or encoder_right_count < pulsos_deseados_der):
         adjust_movement(deviation_y)
-        check_obstacles()
-        if should_stop:
-            pwm_left.ChangeDutyCycle(0)
-            pwm_right.ChangeDutyCycle(0)
-            rospy.loginfo("Motores detenidos temporalmente")
-            time.sleep(5)
-            rospy.loginfo("Revisando nuevamente después de la pausa")
-            for _ in range(20):
-                check_obstacles()
-                if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
-                    time.sleep(5)
-                else:
-                    break
-            pwm_left.ChangeDutyCycle(duty_cycle_high)
-            pwm_right.ChangeDutyCycle(duty_cycle_low)
-            rospy.loginfo("Movimiento reanudado")
+        if check_obstacle:
+            check_obstacles()
+            if should_stop:
+                pwm_left.ChangeDutyCycle(0)
+                pwm_right.ChangeDutyCycle(0)
+                rospy.loginfo("Motores detenidos temporalmente")
+                time.sleep(5)
+                rospy.loginfo("Revisando nuevamente después de la pausa")
+                for _ in range(20):
+                    check_obstacles()
+                    if should_stop:
+                        rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
+                        time.sleep(5)
+                    else:
+                        break
+                pwm_left.ChangeDutyCycle(duty_cycle_high)
+                pwm_right.ChangeDutyCycle(duty_cycle_low)
+                rospy.loginfo("Movimiento reanudado")
         time.sleep(0.01)
     
     pwm_left.ChangeDutyCycle(0)
@@ -263,6 +264,7 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
     rospy.loginfo(f"Curva de {degree} grados completada")
+
 def handle_T2():
     move_straight(50)
     done_pub.publish("Forward Done")
@@ -281,7 +283,7 @@ def handle_T2():
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     
 def handle_T21():
-    move_straight(15, duty_cycle_high=77, duty_cycle_low=70)
+    move_straight(15, duty_cycle_high=77, duty_cycle_low=70, check_obstacle=False)
     done_pub.publish("Forward 20cm Done")
     rospy.loginfo("Mensaje 'Forward 20cm Done' publicado")
     turn(90, 2, reverse=True)
