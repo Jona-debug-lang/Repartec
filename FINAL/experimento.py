@@ -230,29 +230,24 @@ def turn(degree, time_T, motor_left_duty=100, motor_right_duty=25, reverse=False
     pwm_left.ChangeDutyCycle(motor_left_duty)
     pwm_right.ChangeDutyCycle(motor_right_duty)
     
-    start_time = time.time()
     elapsed_time = 0
     
     while elapsed_time < time_T:
+        start_time = time.time()
         check_obstacles()
         if should_stop:
             pwm_left.ChangeDutyCycle(0)
             pwm_right.ChangeDutyCycle(0)
             rospy.loginfo("Motores detenidos temporalmente")
-            time.sleep(5)
-            rospy.loginfo("Revisando nuevamente después de la pausa")
-            for _ in range(20):
+            while should_stop:
+                time.sleep(0.1)
                 check_obstacles()
-                if should_stop:
-                    rospy.loginfo("El obstáculo aún está presente. Pausando nuevamente.")
-                    time.sleep(5)
-                else:
-                    break
+            rospy.loginfo("Movimiento reanudado")
             pwm_left.ChangeDutyCycle(motor_left_duty)
             pwm_right.ChangeDutyCycle(motor_right_duty)
-            rospy.loginfo("Movimiento reanudado")
-        time.sleep(0.01)
-        elapsed_time = time.time() - start_time
+        else:
+            time.sleep(0.01)
+            elapsed_time += time.time() - start_time
     
     pwm_left.ChangeDutyCycle(0)
     pwm_right.ChangeDutyCycle(0)
